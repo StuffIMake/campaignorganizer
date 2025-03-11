@@ -108,7 +108,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter basename="/penandpaperproject">
+      <BrowserRouter basename="/campaignorganizer">
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
           <Navigation />
           <Box sx={{ flexGrow: 1, overflow: 'auto', position: 'relative' }}>

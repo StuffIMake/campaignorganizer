@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/penandpaperproject/', // GitHub Pages repository name
+  base: '/campaignorganizer/', // GitHub Pages repository name
   server: {
     port: 3000,
   },

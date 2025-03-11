@@ -20,7 +20,7 @@
           
           // Use history API to replace the current URL with the target route
           // This prevents adding a history entry and allows the SPA router to take over
-          history.replaceState(null, null, '/penandpaperproject' + redirectPath);
+          history.replaceState(null, null, '/campaignorganizer' + redirectPath);
         }
       })();
     </script>
@@ -40,7 +40,7 @@
           if (err.message && err.message.includes('Failed to fetch dynamically imported module')) {
             console.log('Attempting to reload the application...');
             setTimeout(() => {
-              window.location.href = '/penandpaperproject/';
+              window.location.href = '/campaignorganizer/';
             }, 1000);
           }
           
@@ -55,7 +55,7 @@
             
             // Redirect to the homepage after a delay
             setTimeout(() => {
-              window.location.href = '/penandpaperproject/';
+              window.location.href = '/campaignorganizer/';
             }, 2000);
           }
         });

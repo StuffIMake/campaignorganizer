@@ -23,7 +23,7 @@ A digital companion for tabletop RPG sessions featuring interactive maps, ambien
 
 ```bash
 git clone https://github.com/StuffIMake/campaignorganizer.git
-cd penandpaperproject
+cd campaignorganizer
 npm install
 npm run dev
 ```
