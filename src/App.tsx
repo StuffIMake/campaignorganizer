@@ -60,7 +60,7 @@ const createLazyComponent = (
 const MapViewLazy = createLazyComponent(() => import('./pages/MapView'), 'MapView');
 const LocationsViewLazy = createLazyComponent(() => import('./pages/LocationsView'), 'LocationsView');
 const CharactersViewLazy = createLazyComponent(() => import('./pages/CharactersView'), 'CharactersView');
-const CombatsViewLazy = createLazyComponent(() => import('./components/CombatsView'), 'CombatsView');
+const CombatsViewLazy = createLazyComponent(() => import('./pages/CombatsView'), 'CombatsView');
 const CombatSessionViewLazy = createLazyComponent(() => import('./pages/CombatSessionView'), 'CombatSessionView');
 
 // Loading component for Suspense fallback

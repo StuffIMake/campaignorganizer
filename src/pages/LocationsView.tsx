@@ -46,7 +46,10 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import HelpIcon from '@mui/icons-material/Help';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useStore } from '../store';
+import { CustomLocation } from '../store';
 import { AssetManager } from '../services/assetManager';
 import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import MarkdownContent from '../components/MarkdownContent';
@@ -56,6 +59,7 @@ export const LocationsView: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [newLocation, setNewLocation] = useState({
     name: '',
     description: '',
@@ -98,8 +102,64 @@ export const LocationsView: React.FC = () => {
     saveDataToIndexedDB 
   } = useStore();
   
-  const topLevelLocations = getAllTopLevelLocations();
-
+  // Apply search filter to all locations
+  const filteredLocations = React.useMemo(() => {
+    if (!searchQuery.trim()) return locations;
+    
+    const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    return locations.filter(location => {
+      // Search in various location fields
+      const searchableFields = [
+        location.name.toLowerCase(),
+        location.description.toLowerCase(),
+        location.backgroundMusic?.toLowerCase() || '',
+        location.entrySound?.toLowerCase() || '',
+        location.imageUrl?.toLowerCase() || '',
+      ];
+      
+      // Connect to parent location names
+      if (location.parentLocationId) {
+        const parentLocation = locations.find(loc => loc.id === location.parentLocationId);
+        if (parentLocation) {
+          searchableFields.push(parentLocation.name.toLowerCase());
+        }
+      }
+      
+      // Connected locations
+      if (location.connectedLocations && location.connectedLocations.length > 0) {
+        location.connectedLocations.forEach(connectedId => {
+          const connectedLocation = locations.find(loc => loc.id === connectedId);
+          if (connectedLocation) {
+            searchableFields.push(connectedLocation.name.toLowerCase());
+          }
+        });
+      }
+      
+      // Check if any search term matches any field
+      return searchTerms.some(term => 
+        searchableFields.some(field => field.includes(term))
+      );
+    });
+  }, [locations, searchQuery]);
+  
+  // Filter top level locations based on search results
+  const filteredTopLevelLocations = React.useMemo(() => {
+    if (!searchQuery.trim()) return getAllTopLevelLocations();
+    
+    // If searching, show all matching locations at top level for easier discovery
+    return filteredLocations.filter(location => !location.parentLocationId);
+  }, [filteredLocations, getAllTopLevelLocations, searchQuery]);
+  
+  // Get sublocation function that respects search filter
+  const getFilteredSublocationsByParentId = (parentId: string) => {
+    if (!searchQuery.trim()) {
+      return getSublocationsByParentId(parentId);
+    } else {
+      return filteredLocations.filter(loc => loc.parentLocationId === parentId);
+    }
+  };
+  
   // Load audio files on component mount
   useEffect(() => {
     const loadAssets = async () => {
@@ -239,9 +299,9 @@ export const LocationsView: React.FC = () => {
   };
   
   // Recursive function to render all locations with nested structure
-  const renderLocation = (location: any, level = 0) => {
+  const renderLocation = (location: CustomLocation, level = 0) => {
     const isExpanded = expandedLocations[location.id] || false;
-    const sublocations = getSublocationsByParentId(location.id);
+    const sublocations = getFilteredSublocationsByParentId(location.id);
     const hasSublocations = sublocations.length > 0;
     
     return (
@@ -490,26 +550,100 @@ export const LocationsView: React.FC = () => {
         </Box>
       </Box>
       
-      {locations.length === 0 ? (
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search locations by name, description, connected locations, parent location..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton 
+                  aria-label="clear search" 
+                  onClick={() => setSearchQuery('')}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
+      
+      {filteredLocations.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Locations Yet
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Add your first location to get started.
-          </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            Add Location
-          </Button>
+          {locations.length === 0 ? (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Locations Yet
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Add your first location to get started.
+              </Typography>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => setIsAddDialogOpen(true)}
+              >
+                Add Location
+              </Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Locations Found
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Try adjusting your search terms.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={() => setSearchQuery('')}
+              >
+                Clear Search
+              </Button>
+            </>
+          )}
         </Paper>
       ) : (
         // Locations list
         <Box>
-          {topLevelLocations.map(location => renderLocation(location))}
+          {filteredTopLevelLocations.map(location => renderLocation(location))}
+          
+          {/* When searching, also show child locations that match but whose parents don't */}
+          {searchQuery.trim() && (
+            <>
+              {filteredLocations.filter(loc => 
+                loc.parentLocationId && 
+                !filteredLocations.some(parent => 
+                  parent.id === loc.parentLocationId
+                )
+              ).length > 0 && (
+                <Box sx={{ mt: 4, mb: 2 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    Other Matching Locations
+                  </Typography>
+                  <Divider sx={{ mt: 1, mb: 2 }} />
+                </Box>
+              )}
+              {filteredLocations.filter(loc => 
+                loc.parentLocationId && 
+                !filteredLocations.some(parent => 
+                  parent.id === loc.parentLocationId
+                )
+              ).map(location => renderLocation(location))}
+            </>
+          )}
         </Box>
       )}
       

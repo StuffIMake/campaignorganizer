@@ -8,7 +8,7 @@ export function preloadRouteComponents(): void {
   import('./pages/MapView');
   import('./pages/LocationsView');
   import('./pages/CharactersView');
-  import('./components/CombatsView');
+  import('./pages/CombatsView');
   import('./pages/CombatSessionView');
   
   console.log('Preloading critical components...');

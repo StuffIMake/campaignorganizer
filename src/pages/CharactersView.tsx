@@ -30,7 +30,8 @@ import {
   Tabs,
   Tab,
   Autocomplete,
-  Tooltip
+  Tooltip,
+  InputAdornment
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -43,6 +44,8 @@ import PlaceIcon from '@mui/icons-material/Place';
 import SportsKabaddiIcon from '@mui/icons-material/SportsKabaddi';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import HelpIcon from '@mui/icons-material/Help';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '../store';
 import { AudioTrackPanel } from '../components/AudioTrackPanel';
@@ -57,6 +60,7 @@ export const CharactersView: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [imageAssets, setImageAssets] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { 
     characters, 
@@ -66,6 +70,39 @@ export const CharactersView: React.FC = () => {
     saveDataToIndexedDB,
     locations
   } = useStore();
+  
+  // Filter characters based on search query
+  const filteredCharacters = React.useMemo(() => {
+    if (!searchQuery.trim()) return characters;
+    
+    const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    return characters.filter(character => {
+      // Search in various character fields
+      const searchableFields = [
+        character.name.toLowerCase(),
+        character.description.toLowerCase(),
+        character.type.toLowerCase(),
+        `hp:${character.hp}`,
+        // Include location name if present
+        character.locationId ? 
+          locations.find(loc => loc.id === character.locationId)?.name.toLowerCase() || '' : ''
+      ];
+      
+      // Include inventory items if present
+      if (character.inventory && character.inventory.length > 0) {
+        character.inventory.forEach((item: any) => {
+          searchableFields.push(item.name.toLowerCase());
+          if (item.description) searchableFields.push(item.description.toLowerCase());
+        });
+      }
+      
+      // Check if any search term matches any field
+      return searchTerms.some(term => 
+        searchableFields.some(field => field.includes(term))
+      );
+    });
+  }, [characters, searchQuery, locations]);
   
   // New character form data
   const [newCharacter, setNewCharacter] = useState({
@@ -369,25 +406,74 @@ export const CharactersView: React.FC = () => {
         </Box>
       </Box>
       
-      {characters.length === 0 ? (
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search characters by name, description, type, HP, location, inventory items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton 
+                  aria-label="clear search" 
+                  onClick={() => setSearchQuery('')}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
+      
+      {filteredCharacters.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Characters Yet
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Add your first character to get started.
-          </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            Add Character
-          </Button>
+          {characters.length === 0 ? (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Characters Yet
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Add your first character to get started.
+              </Typography>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => setIsAddDialogOpen(true)}
+              >
+                Add Character
+              </Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Characters Found
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Try adjusting your search terms.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={() => setSearchQuery('')}
+              >
+                Clear Search
+              </Button>
+            </>
+          )}
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {characters.map(character => renderCharacterCard(character))}
+          {filteredCharacters.map(character => renderCharacterCard(character))}
         </Grid>
       )}
       

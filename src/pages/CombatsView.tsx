@@ -24,11 +24,15 @@ import {
   Chip,
   Divider,
   ButtonGroup,
+  InputAdornment,
+  Paper
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useStore } from '../store';
 import { Combat, Character } from '../store';
 import { AssetManager } from '../services/assetManager';
@@ -46,6 +50,8 @@ export const CombatsView: React.FC = () => {
   const [audioAssets, setAudioAssets] = useState<string[]>([]);
   const [imageAssets, setImageAssets] = useState<string[]>([]);
   const [enemyInstances, setEnemyInstances] = useState<EnemyInstance[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const [editedCombat, setEditedCombat] = useState<Partial<Combat>>({
     name: '',
     description: '',
@@ -54,6 +60,59 @@ export const CombatsView: React.FC = () => {
     enemies: [],
     difficulty: 'medium',
   });
+
+  // Filter combats based on search query
+  const filteredCombats = React.useMemo(() => {
+    if (!searchQuery.trim()) return combats;
+    
+    const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    return combats.filter(combat => {
+      // Search in various combat fields
+      const searchableFields = [
+        combat.name.toLowerCase(),
+        combat.description.toLowerCase(),
+        (combat.difficulty || 'medium').toLowerCase(),
+        combat.locationId ? 
+          locations.find(loc => loc.id === combat.locationId)?.name.toLowerCase() || '' : '',
+        combat.entrySound?.toLowerCase() || '',
+        combat.backgroundMusic?.toLowerCase() || '',
+        combat.backgroundImage?.toLowerCase() || ''
+      ];
+      
+      // Add player character names and stats
+      combat.playerCharacters.forEach(pc => {
+        searchableFields.push(pc.name.toLowerCase());
+        searchableFields.push(`player hp:${pc.hp}`);
+        searchableFields.push(pc.type.toLowerCase());
+      });
+      
+      // Add enemy names and stats
+      combat.enemies.forEach(enemy => {
+        searchableFields.push(enemy.name.toLowerCase());
+        searchableFields.push(`enemy hp:${enemy.hp}`);
+        searchableFields.push(enemy.type.toLowerCase());
+      });
+      
+      // Group enemies by name for better search (e.g., "3 goblins")
+      const enemyCounts: Record<string, number> = {};
+      combat.enemies.forEach(enemy => {
+        enemyCounts[enemy.name] = (enemyCounts[enemy.name] || 0) + 1;
+      });
+      
+      // Add enemy counts as searchable text
+      Object.entries(enemyCounts).forEach(([name, count]) => {
+        if (count > 1) {
+          searchableFields.push(`${count} ${name.toLowerCase()}`);
+        }
+      });
+      
+      // Check if any search term matches any field
+      return searchTerms.some(term => 
+        searchableFields.some(field => field.includes(term))
+      );
+    });
+  }, [combats, searchQuery, locations]);
 
   // Filter characters by type
   const playerCharacters = characters.filter(char => char.type === 'player');
@@ -223,82 +282,150 @@ export const CombatsView: React.FC = () => {
           Add Combat
         </Button>
       </Box>
+      
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search combats by name, description, players, enemies, difficulty..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton 
+                  aria-label="clear search" 
+                  onClick={() => setSearchQuery('')}
+                  edge="end"
+                  size="small"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </Box>
 
-      <Grid container spacing={3}>
-        {combats.map((combat) => (
-          <Grid item xs={12} md={6} key={combat.id}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      {combat.name}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      Difficulty: {combat.difficulty || 'Not set'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 2 }}>
-                      {combat.description}
-                    </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Players ({combat.playerCharacters.length}):
+      {filteredCombats.length === 0 ? (
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          {combats.length === 0 ? (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Combat Encounters Yet
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Add your first combat encounter to get started.
+              </Typography>
+              <Button 
+                variant="contained" 
+                color="primary"
+                startIcon={<AddIcon />} 
+                onClick={handleAddClick}
+              >
+                Add Combat
+              </Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Combats Found
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Try adjusting your search terms.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={() => setSearchQuery('')}
+              >
+                Clear Search
+              </Button>
+            </>
+          )}
+        </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {filteredCombats.map((combat) => (
+            <Grid item xs={12} md={6} key={combat.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        {combat.name}
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
-                        {combat.playerCharacters.map(pc => (
-                          <Chip
-                            key={pc.id}
-                            label={`${pc.name} (HP: ${pc.hp})`}
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                          />
-                        ))}
-                        {combat.playerCharacters.length === 0 && (
-                          <Typography variant="body2" color="text.secondary">No players assigned</Typography>
-                        )}
-                      </Box>
-                      
-                      <Typography variant="subtitle2" gutterBottom>
-                        Enemies ({combat.enemies.length}):
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
+                        Difficulty: {combat.difficulty || 'Not set'}
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {/* Group enemies by ID for display */}
-                        {Object.entries(combat.enemies.reduce((acc, enemy) => {
-                          acc[enemy.id] = (acc[enemy.id] || 0) + 1;
-                          return acc;
-                        }, {} as Record<string, number>)).map(([id, count]) => {
-                          const enemy = combat.enemies.find(e => e.id === id);
-                          return enemy ? (
+                      <Typography variant="body2" sx={{ mb: 2 }}>
+                        {combat.description}
+                      </Typography>
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Players ({combat.playerCharacters.length}):
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                          {combat.playerCharacters.map(pc => (
                             <Chip
-                              key={id}
-                              label={`${enemy.name} ${count > 1 ? `(${count}) ` : ''}(HP: ${enemy.hp})`}
+                              key={pc.id}
+                              label={`${pc.name} (HP: ${pc.hp})`}
                               size="small"
-                              color="error"
+                              color="success"
                               variant="outlined"
                             />
-                          ) : null;
-                        })}
-                        {combat.enemies.length === 0 && (
-                          <Typography variant="body2" color="text.secondary">No enemies assigned</Typography>
-                        )}
+                          ))}
+                          {combat.playerCharacters.length === 0 && (
+                            <Typography variant="body2" color="text.secondary">No players assigned</Typography>
+                          )}
+                        </Box>
+                        
+                        <Typography variant="subtitle2" gutterBottom>
+                          Enemies ({combat.enemies.length}):
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {/* Group enemies by ID for display */}
+                          {Object.entries(combat.enemies.reduce((acc, enemy) => {
+                            acc[enemy.id] = (acc[enemy.id] || 0) + 1;
+                            return acc;
+                          }, {} as Record<string, number>)).map(([id, count]) => {
+                            const enemy = combat.enemies.find(e => e.id === id);
+                            return enemy ? (
+                              <Chip
+                                key={id}
+                                label={`${enemy.name} ${count > 1 ? `(${count}) ` : ''}(HP: ${enemy.hp})`}
+                                size="small"
+                                color="error"
+                                variant="outlined"
+                              />
+                            ) : null;
+                          })}
+                          {combat.enemies.length === 0 && (
+                            <Typography variant="body2" color="text.secondary">No enemies assigned</Typography>
+                          )}
+                        </Box>
                       </Box>
                     </Box>
+                    <Box>
+                      <IconButton onClick={() => handleEditClick(combat)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClick(combat.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </Box>
-                  <Box>
-                    <IconButton onClick={() => handleEditClick(combat)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton onClick={() => handleDeleteClick(combat.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
