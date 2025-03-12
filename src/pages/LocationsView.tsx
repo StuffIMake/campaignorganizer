@@ -452,8 +452,8 @@ export const LocationsView: React.FC = () => {
                       variant="outlined"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const connectedNames = location.connectedLocations
-                          .map((id: string) => locations.find(loc => loc.id === id)?.name || 'Unknown')
+                        const connectedNames = location?.connectedLocations
+                          ?.map((id: string) => locations.find(loc => loc.id === id)?.name || 'Unknown')
                           .join(', ');
                         alert(`Connected to: ${connectedNames}`);
                       }}
