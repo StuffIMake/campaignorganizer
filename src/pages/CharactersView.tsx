@@ -46,12 +46,15 @@ import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 import HelpIcon from '@mui/icons-material/Help';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import CloseIcon from '@mui/icons-material/Close';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '../store';
 import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import { AssetManager } from '../services/assetManager';
 import { Character } from '../store';
 import MarkdownContent from '../components/MarkdownContent';
+import AssetViewer from '../components/AssetViewer';
+import PDFViewer from '../components/PDFViewer';
 
 export const CharactersView: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -61,6 +64,8 @@ export const CharactersView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [imageAssets, setImageAssets] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfAsset, setCurrentPdfAsset] = useState('');
   
   const { 
     characters, 
@@ -255,6 +260,13 @@ export const CharactersView: React.FC = () => {
       ? locations.find(loc => loc.id === character.locationId)
       : null;
       
+    const handleViewPdf = () => {
+      if (character.descriptionAssetName) {
+        setCurrentPdfAsset(character.descriptionAssetName);
+        setPdfViewerOpen(true);
+      }
+    };
+    
     return (
       <Grid item xs={12} sm={6} md={5} key={character.id}>
         <Card>
@@ -326,7 +338,41 @@ export const CharactersView: React.FC = () => {
                       }}
                     />
                   )}
-                  {character.descriptionType !== 'markdown' && (
+                  {character.descriptionType === 'image' && character.descriptionAssetName && (
+                    <Box sx={{ mt: 1, maxHeight: '150px', overflow: 'hidden' }}>
+                      <AssetViewer 
+                        assetName={character.descriptionAssetName} 
+                        height="150px"
+                        width="100%"
+                      />
+                    </Box>
+                  )}
+                  {character.descriptionType === 'pdf' && character.descriptionAssetName && (
+                    <Box sx={{ 
+                      mt: 1, 
+                      p: 1,
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 1,
+                      bgcolor: 'background.paper',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {character.description}
+                      </Typography>
+                      <Button 
+                        variant="outlined" 
+                        size="small" 
+                        sx={{ ml: 'auto' }}
+                        onClick={handleViewPdf}
+                      >
+                        View PDF
+                      </Button>
+                    </Box>
+                  )}
+                  {character.descriptionType !== 'markdown' && 
+                   character.descriptionType !== 'image' && 
+                   character.descriptionType !== 'pdf' && (
                     <Typography variant="body2" color="text.secondary">
                       {character.description}
                     </Typography>
@@ -901,6 +947,51 @@ export const CharactersView: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+      
+      {/* PDF Viewer Dialog */}
+      <Dialog 
+        open={pdfViewerOpen} 
+        onClose={() => setPdfViewerOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
+          p: 1.5,
+          bgcolor: 'background.paper'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" component="div">
+              {currentPdfAsset}
+            </Typography>
+            <IconButton 
+              onClick={() => setPdfViewerOpen(false)}
+              size="small"
+              edge="end"
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, height: '75vh' }}>
+          {currentPdfAsset && (
+            <PDFViewer 
+              assetName={currentPdfAsset} 
+              height="100%" 
+              width="100%" 
+              allowDownload={true}
+              showTopBar={false}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       
       {/* Include the AudioTrackPanel */}
       <AudioTrackPanel />

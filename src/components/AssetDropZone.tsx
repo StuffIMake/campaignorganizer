@@ -111,7 +111,7 @@ export const AssetDropZone: React.FC<AssetDropZoneProps> = ({
 Your zip file should contain:
 
 1. /audio folder - with mp3, wav, or ogg files
-2. /images folder - with jpg, png, or gif files
+2. /images folder - with jpg, png, gif, or pdf files
 3. /data folder - with JSON files:
    - locations.json: Array of location objects with id, name, description
    - characters.json: Array of character objects
@@ -405,19 +405,26 @@ Example locations.json:
     
     return (
       <List dense>
-        {assets.map((asset) => (
-          <ListItem key={asset}>
-            <ListItemText 
-              primary={asset} 
-              secondary={type === 'data' ? 'JSON Data' : `${type.charAt(0).toUpperCase() + type.slice(1)} File`} 
-            />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" onClick={() => handleDeleteAsset(type, asset)}>
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
-        ))}
+        {assets.map((asset: string) => {
+          const isPdf = type === 'images' && asset.toLowerCase().endsWith('.pdf');
+          return (
+            <ListItem key={asset}>
+              <ListItemText 
+                primary={asset} 
+                secondary={
+                  type === 'data' ? 'JSON Data' : 
+                  isPdf ? 'PDF Document' :
+                  `${type.charAt(0).toUpperCase() + type.slice(1)} File`
+                } 
+              />
+              <ListItemSecondaryAction>
+                <IconButton edge="end" onClick={() => handleDeleteAsset(type, asset)}>
+                  <DeleteIcon />
+                </IconButton>
+              </ListItemSecondaryAction>
+            </ListItem>
+          );
+        })}
       </List>
     );
   };
@@ -667,12 +674,12 @@ Example locations.json:
       {/* Dialog for adding individual assets */}
       <Dialog open={isAddAssetDialogOpen} onClose={() => setIsAddAssetDialogOpen(false)}>
         <DialogTitle>
-          Add {currentAssetType === 'audio' ? 'Audio' : currentAssetType === 'images' ? 'Image' : 'Data'} File
+          Add {currentAssetType === 'audio' ? 'Audio' : currentAssetType === 'images' ? 'Image or PDF' : 'Data'} File
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
             {currentAssetType === 'audio' && 'Select an audio file (MP3, WAV, OGG)'}
-            {currentAssetType === 'images' && 'Select an image file (PNG, JPG, GIF)'}
+            {currentAssetType === 'images' && 'Select an image file (PNG, JPG, GIF) or a PDF document'}
             {currentAssetType === 'data' && 'Select a JSON data file'}
           </Typography>
           
@@ -689,7 +696,7 @@ Example locations.json:
               onChange={handleSingleFileSelect}
               accept={
                 currentAssetType === 'audio' ? 'audio/*' :
-                currentAssetType === 'images' ? 'image/*' :
+                currentAssetType === 'images' ? 'image/*,.pdf' :
                 '.json'
               }
             />

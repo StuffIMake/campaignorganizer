@@ -41,6 +41,8 @@ import {
 import { useStore } from '../store';
 import { Combat, Character } from '../store';
 import MarkdownContent from './MarkdownContent';
+import AssetViewer from './AssetViewer';
+import PDFViewer from './PDFViewer';
 
 // Interface for combat participants with initiative
 interface CombatParticipant {
@@ -77,6 +79,10 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   const [newParticipantInitiative, setNewParticipantInitiative] = useState<number | string>(10);
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  
+  // PDF viewer state
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfAsset, setCurrentPdfAsset] = useState('');
   
   // Initialize audio only once when the component mounts
   useEffect(() => {
@@ -335,6 +341,12 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   // Convert currentHp and initiative to numbers for display or calculations when needed
   const displayHp = (hp: number | string): number => {
     return typeof hp === 'string' ? (parseInt(hp) || 0) : hp;
+  };
+  
+  // Handle viewing a PDF
+  const handleViewPdf = (assetName: string) => {
+    setCurrentPdfAsset(assetName);
+    setPdfViewerOpen(true);
   };
   
   return (
@@ -616,7 +628,42 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
                         {selectedParticipant.character.descriptionType === 'markdown' && (
                           <MarkdownContent content={selectedParticipant.character.description} />
                         )}
-                        {(!selectedParticipant.character.descriptionType || selectedParticipant.character.descriptionType !== 'markdown') && (
+                        {selectedParticipant.character.descriptionType === 'image' && selectedParticipant.character.descriptionAssetName && (
+                          <Box sx={{ mt: 1, maxHeight: '200px', overflow: 'hidden' }}>
+                            <AssetViewer 
+                              assetName={selectedParticipant.character.descriptionAssetName} 
+                              height="200px"
+                              width="100%"
+                            />
+                          </Box>
+                        )}
+                        {selectedParticipant.character.descriptionType === 'pdf' && selectedParticipant.character.descriptionAssetName && (
+                          <Box sx={{ 
+                            mt: 1, 
+                            p: 1,
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 1,
+                            bgcolor: 'background.paper',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {selectedParticipant.character.description}
+                            </Typography>
+                            <Button 
+                              variant="outlined" 
+                              size="small" 
+                              sx={{ ml: 'auto' }}
+                              onClick={() => handleViewPdf(selectedParticipant.character.descriptionAssetName || '')}
+                            >
+                              View PDF
+                            </Button>
+                          </Box>
+                        )}
+                        {(!selectedParticipant.character.descriptionType || 
+                          (selectedParticipant.character.descriptionType !== 'markdown' && 
+                           selectedParticipant.character.descriptionType !== 'image' && 
+                           selectedParticipant.character.descriptionType !== 'pdf')) && (
                           <Typography variant="body2">
                             {selectedParticipant.character.description}
                           </Typography>
@@ -813,6 +860,51 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
             Add
           </Button>
         </DialogActions>
+      </Dialog>
+      
+      {/* Add PDF Viewer Dialog at the end */}
+      <Dialog 
+        open={pdfViewerOpen} 
+        onClose={() => setPdfViewerOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
+          p: 1.5,
+          bgcolor: 'background.paper'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" component="div">
+              {currentPdfAsset}
+            </Typography>
+            <IconButton 
+              onClick={() => setPdfViewerOpen(false)}
+              size="small"
+              edge="end"
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, height: '75vh' }}>
+          {currentPdfAsset && (
+            <PDFViewer 
+              assetName={currentPdfAsset} 
+              height="100%" 
+              width="100%" 
+              allowDownload={true}
+              showTopBar={false}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   );

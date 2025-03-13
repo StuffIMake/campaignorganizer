@@ -288,6 +288,7 @@ export class AssetManager {
       // Data files
       case 'json': return 'application/json';
       case 'txt': return 'text/plain';
+      case 'pdf': return 'application/pdf';
       
       // Default
       default: return 'application/octet-stream';

@@ -75,6 +75,8 @@ import {
   Code as CodeIcon
 } from '@mui/icons-material';
 import MarkdownContent from '../components/MarkdownContent';
+import AssetViewer from '../components/AssetViewer';
+import PDFViewer from '../components/PDFViewer';
 
 export const MapView: React.FC = () => {
   const navigate = useNavigate();
@@ -147,6 +149,11 @@ export const MapView: React.FC = () => {
   const [imageNaturalWidth, setImageNaturalWidth] = useState(0);
   const [imageNaturalHeight, setImageNaturalHeight] = useState(0);
   
+  // Add these new state variables for PDF handling
+  const [isPdf, setIsPdf] = useState(false);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfAsset, setCurrentPdfAsset] = useState('');
+  
   // Effect to initialize the selected location from the saved state
   useEffect(() => {
     if (locations.length > 0) {
@@ -175,7 +182,7 @@ export const MapView: React.FC = () => {
     }
   }, [locations, selectedLocationId]);
   
-  // Effect to load the image when the selected location changes
+  // Modify the loadImage function to detect PDF files
   useEffect(() => {
     if (selectedLocation) {
       const loadImage = async () => {
@@ -183,15 +190,27 @@ export const MapView: React.FC = () => {
         try {
           // Use the location's imageUrl property if available
           if (selectedLocation.imageUrl) {
-            const url = await AssetManager.getAssetUrl('images', selectedLocation.imageUrl);
-            setImageUrl(url);
+            const isPdfFile = selectedLocation.imageUrl.toLowerCase().endsWith('.pdf');
+            setIsPdf(isPdfFile);
+            
+            if (isPdfFile) {
+              // For PDFs, just store the asset name for later use with PDFViewer
+              setCurrentPdfAsset(selectedLocation.imageUrl);
+              setImageUrl(''); // Clear image URL since we'll use PDFViewer
+            } else {
+              // Normal image handling
+              const url = await AssetManager.getAssetUrl('images', selectedLocation.imageUrl);
+              setImageUrl(url);
+            }
           } else {
             // Clear the image URL if no image is selected
             setImageUrl('');
+            setIsPdf(false);
           }
         } catch (error) {
           console.error('Error loading image:', error);
           setImageUrl('');
+          setIsPdf(false);
         } finally {
           setIsImageLoading(false);
         }
@@ -883,6 +902,15 @@ export const MapView: React.FC = () => {
     const locationName = locations.find(loc => loc.id === selectedNpc.locationId)?.name || 'Unknown';
     const updateCharacter = useStore.getState().updateCharacter;
     
+    // Function to handle viewing PDF
+    const handleViewNpcPdf = () => {
+      if (selectedNpc.descriptionAssetName) {
+        setCurrentPdfAsset(selectedNpc.descriptionAssetName);
+        setPdfViewerOpen(true);
+        setShowNpcDetails(false); // Close the NPC details panel
+      }
+    };
+    
     // Function to add new item in edit mode
     const handleAddItem = () => {
       if (!selectedNpc || !editMode) return;
@@ -890,7 +918,7 @@ export const MapView: React.FC = () => {
       const newItem: Item = {
         id: crypto.randomUUID(),
         name: 'New Item',
-        description: 'Item description',
+        description: '',
         quantity: 1
       };
       
@@ -904,7 +932,7 @@ export const MapView: React.FC = () => {
       if (!selectedNpc || !editMode) return;
       
       const updatedInventory = (selectedNpc.inventory || []).map(item => 
-        item.id === itemId ? {...item, ...itemData} : item
+        item.id === itemId ? { ...item, ...itemData } : item
       );
       
       updateCharacter(selectedNpc.id, { inventory: updatedInventory });
@@ -938,7 +966,43 @@ export const MapView: React.FC = () => {
             <MarkdownContent content={selectedNpc.description} />
           </Box>
         )}
-        {(!selectedNpc.descriptionType || selectedNpc.descriptionType !== 'markdown') && (
+        {selectedNpc.descriptionType === 'image' && selectedNpc.descriptionAssetName && (
+          <Box sx={{ mt: 1, mb: 2, maxHeight: '200px', overflow: 'hidden' }}>
+            <AssetViewer 
+              assetName={selectedNpc.descriptionAssetName} 
+              height="200px"
+              width="100%"
+            />
+          </Box>
+        )}
+        {selectedNpc.descriptionType === 'pdf' && selectedNpc.descriptionAssetName && (
+          <Box sx={{ 
+            mt: 1, 
+            mb: 2,
+            p: 1,
+            border: '1px solid rgba(0,0,0,0.1)',
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <Typography variant="body2" color="text.secondary">
+              {selectedNpc.description}
+            </Typography>
+            <Button 
+              variant="outlined" 
+              size="small" 
+              sx={{ ml: 'auto' }}
+              onClick={handleViewNpcPdf}
+            >
+              View PDF
+            </Button>
+          </Box>
+        )}
+        {(!selectedNpc.descriptionType || 
+          (selectedNpc.descriptionType !== 'markdown' && 
+           selectedNpc.descriptionType !== 'image' && 
+           selectedNpc.descriptionType !== 'pdf')) && (
           <Typography variant="body2" paragraph>{selectedNpc.description}</Typography>
         )}
         
@@ -1416,6 +1480,13 @@ export const MapView: React.FC = () => {
     );
   };
   
+  // Add a function to handle viewing the PDF
+  const handleViewPdf = () => {
+    if (currentPdfAsset) {
+      setPdfViewerOpen(true);
+    }
+  };
+  
   // Loading state for the entire application
   if (isLoading) {
     return (
@@ -1739,22 +1810,26 @@ export const MapView: React.FC = () => {
               Loading map...
             </Typography>
           </Box>
-        ) : !imageUrl || !selectedLocation ? (
-          <Box 
-            className="map-background"
-            sx={{ 
-              width: '100%', 
-              height: '100%', 
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center', 
-              justifyContent: 'center',
-            }}
-          >
-            <ImageNotSupportedIcon sx={{ fontSize: 60, opacity: 0.7 }} />
-            <Typography variant="body1" sx={{ mt: 2, opacity: 0.7 }}>
-              No map image available
+        ) : !imageUrl && !isPdf || !selectedLocation ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
+            <Typography variant="body1" color="text.secondary">
+              {selectedLocation 
+                ? "No image selected for this location. Edit the location to add an image."
+                : "Select a location to view details."}
             </Typography>
+          </Box>
+        ) : isPdf ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              This location has a PDF document attached.
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={handleViewPdf}
+            >
+              View PDF Document
+            </Button>
           </Box>
         ) : (
           <TransformWrapper
@@ -2059,6 +2134,51 @@ export const MapView: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setShowDescriptionDialog(false)}>Close</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog 
+        open={pdfViewerOpen} 
+        onClose={() => setPdfViewerOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
+          p: 1.5,
+          bgcolor: 'background.paper'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" component="div">
+              {currentPdfAsset}
+            </Typography>
+            <IconButton 
+              onClick={() => setPdfViewerOpen(false)}
+              size="small"
+              edge="end"
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, height: '75vh' }}>
+          {currentPdfAsset && (
+            <PDFViewer 
+              assetName={currentPdfAsset} 
+              height="100%" 
+              width="100%" 
+              allowDownload={true}
+              showTopBar={false}
+            />
+          )}
+        </DialogContent>
       </Dialog>
 
       <AudioTrackPanel />
