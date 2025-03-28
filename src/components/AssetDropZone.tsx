@@ -350,6 +350,16 @@ Example locations.json:
     try {
       const result = await saveDataToIndexedDB();
       setResult(result);
+      
+      if (result.success) {
+        // Reload asset lists after successful save to ensure UI is up-to-date
+        await loadAssetLists();
+        
+        // Call onAssetImport to update parent components if needed
+        if (onAssetImport) {
+          onAssetImport();
+        }
+      }
     } catch (error) {
       setResult({
         success: false,

@@ -9,6 +9,7 @@ import {
   Alert
 } from '@mui/material';
 import { AssetManager } from '../services/assetManager';
+import { useStore } from '../store';
 
 interface JSONEditorProps {
   fileName: string;
@@ -117,6 +118,16 @@ const JSONEditor: React.FC<JSONEditorProps> = ({ fileName, onSave }) => {
         
         // Update original content to reflect saved state
         setOriginalContent(jsonContent);
+        
+        // If this is one of the core state files, refresh the store state
+        if (fileName === 'locations.json' || fileName === 'characters.json' || fileName === 'combats.json') {
+          try {
+            // Trigger a refresh of the store's data from IndexedDB
+            await useStore.getState().refreshAssets();
+          } catch (err) {
+            console.error('Error refreshing store after JSON save:', err);
+          }
+        }
         
         if (onSave) {
           onSave(true);

@@ -456,7 +456,19 @@ export class AssetManager {
       
       // Add data files to the zip
       for (const asset of dataAssets) {
-        dataFolder.file(asset.name, asset.data, { base64: true });
+        // Check if this is a JSON file (data will be a JSON string, not base64 encoded)
+        const isJsonFileWithDirectData = 
+          asset.type === 'application/json' && 
+          typeof asset.data === 'string' && 
+          (asset.data.startsWith('{') || asset.data.startsWith('['));
+        
+        if (isJsonFileWithDirectData) {
+          // Add the JSON file directly (not as base64)
+          dataFolder.file(asset.name, asset.data);
+        } else {
+          // Add other data files as base64
+          dataFolder.file(asset.name, asset.data, { base64: true });
+        }
       }
       
       // Generate the zip file
@@ -657,13 +669,12 @@ export class AssetManager {
       // Store in IndexedDB
       const dataStore = db.transaction(DATA_STORE, 'readwrite').objectStore(DATA_STORE);
       
-      // Use the simplified Unicode encoding approach
-      const jsonString = JSON.stringify(emptyLocations);
-      const base64Data = this.encodeUnicode(jsonString);
+      // Store the JSON string directly instead of base64 encoding
+      const jsonString = JSON.stringify(emptyLocations, null, 2);
       
       dataStore.add({
         name: 'locations.json',
-        data: base64Data,
+        data: jsonString,
         type: 'application/json',
         lastModified: Date.now()
       });

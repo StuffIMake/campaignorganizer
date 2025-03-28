@@ -528,24 +528,18 @@ export const useStore = create<StoreState>((set, get) => {
       try {
         set({ isLoading: true });
         
-        const customLocations = await getLocationsData();
-        const customCharacters = await getCharactersData();
-        
+        // Check if we have assets
         const hasAudioAssets = await AssetManager.hasAssets('audio');
         const hasImageAssets = await AssetManager.hasAssets('images');
         const hasDataAssets = await AssetManager.hasAssets('data');
         
-        // Stop and unload all playing tracks before refreshing
-        const { activeTracks, currentHowl } = get();
+        // Load fresh data from IndexedDB
+        const customLocations = await getLocationsData();
+        const customCharacters = await getCharactersData();
+        const customCombats = await getCombatsData();
         
-        // For each active track, fade out, stop, and unload
-        activeTracks.forEach(track => {
-          track.howl.fade(track.volume, 0, 500);
-          track.howl.once('fade', () => {
-            track.howl.stop();
-            track.howl.unload(); // Make sure to unload to free resources
-          });
-        });
+        // Get the current state
+        const { currentHowl } = get();
         
         // Handle the current howl if it exists
         if (currentHowl) {
@@ -556,10 +550,11 @@ export const useStore = create<StoreState>((set, get) => {
           });
         }
         
-        // Clear the active tracks
+        // Clear the active tracks and update state
         set({
           locations: customLocations,
           characters: customCharacters,
+          combats: customCombats, // Make sure to include combats
           hasAssets: hasAudioAssets || hasImageAssets || hasDataAssets,
           isLoading: false,
           activeTracks: [], // Clear active tracks
@@ -573,12 +568,32 @@ export const useStore = create<StoreState>((set, get) => {
     
     saveDataToIndexedDB: async () => {
       try {
+        // First, load the current JSON files from IndexedDB to get any manual edits
+        // that might have been made directly to the files
+        let currentLocations = await AssetManager.getDataObject<CustomLocation[]>('locations.json');
+        let currentCharacters = await AssetManager.getDataObject<Character[]>('characters.json');
+        let currentCombats = await AssetManager.getDataObject<Combat[]>('combats.json');
+        
+        // Get the in-memory state from the store
         const { locations, characters, combats } = get();
         
-        // Save locations and characters to IndexedDB
-        const saveLocations = await AssetManager.saveDataObject('locations.json', locations);
-        const saveCharacters = await AssetManager.saveDataObject('characters.json', characters);
-        const saveCombats = await AssetManager.saveDataObject('combats.json', combats);
+        // If there are manually edited files in IndexedDB and they're valid, use those
+        // Otherwise use the in-memory state
+        const locationsToSave = Array.isArray(currentLocations) ? currentLocations : locations;
+        const charactersToSave = Array.isArray(currentCharacters) ? currentCharacters : characters;
+        const combatsToSave = Array.isArray(currentCombats) ? currentCombats : combats;
+        
+        // Also update the in-memory state with the latest data to keep things in sync
+        set({
+          locations: locationsToSave,
+          characters: charactersToSave,
+          combats: combatsToSave
+        });
+        
+        // Save the data to IndexedDB
+        const saveLocations = await AssetManager.saveDataObject('locations.json', locationsToSave);
+        const saveCharacters = await AssetManager.saveDataObject('characters.json', charactersToSave);
+        const saveCombats = await AssetManager.saveDataObject('combats.json', combatsToSave);
         
         if (saveLocations.success && saveCharacters.success && saveCombats.success) {
           return { success: true, message: 'Data saved successfully' };
@@ -598,7 +613,8 @@ export const useStore = create<StoreState>((set, get) => {
       try {
         set({ isLoading: true });
         
-        // First, save current state to IndexedDB
+        // First, ensure we don't overwrite manually edited files
+        // This will update store state from IndexedDB and save it back correctly
         const saveResult = await get().saveDataToIndexedDB();
         if (!saveResult.success) {
           set({ isLoading: false });
