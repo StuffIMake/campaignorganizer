@@ -568,32 +568,14 @@ export const useStore = create<StoreState>((set, get) => {
     
     saveDataToIndexedDB: async () => {
       try {
-        // First, load the current JSON files from IndexedDB to get any manual edits
-        // that might have been made directly to the files
-        let currentLocations = await AssetManager.getDataObject<CustomLocation[]>('locations.json');
-        let currentCharacters = await AssetManager.getDataObject<Character[]>('characters.json');
-        let currentCombats = await AssetManager.getDataObject<Combat[]>('combats.json');
-        
         // Get the in-memory state from the store
         const { locations, characters, combats } = get();
         
-        // If there are manually edited files in IndexedDB and they're valid, use those
-        // Otherwise use the in-memory state
-        const locationsToSave = Array.isArray(currentLocations) ? currentLocations : locations;
-        const charactersToSave = Array.isArray(currentCharacters) ? currentCharacters : characters;
-        const combatsToSave = Array.isArray(currentCombats) ? currentCombats : combats;
-        
-        // Also update the in-memory state with the latest data to keep things in sync
-        set({
-          locations: locationsToSave,
-          characters: charactersToSave,
-          combats: combatsToSave
-        });
-        
-        // Save the data to IndexedDB
-        const saveLocations = await AssetManager.saveDataObject('locations.json', locationsToSave);
-        const saveCharacters = await AssetManager.saveDataObject('characters.json', charactersToSave);
-        const saveCombats = await AssetManager.saveDataObject('combats.json', combatsToSave);
+        // Save the data to IndexedDB - we'll use in-memory state from editors by default
+        // Any manual changes via JSON Editor would already be reflected in IndexedDB by the time this runs
+        const saveLocations = await AssetManager.saveDataObject('locations.json', locations);
+        const saveCharacters = await AssetManager.saveDataObject('characters.json', characters);
+        const saveCombats = await AssetManager.saveDataObject('combats.json', combats);
         
         if (saveLocations.success && saveCharacters.success && saveCombats.success) {
           return { success: true, message: 'Data saved successfully' };
@@ -613,8 +595,7 @@ export const useStore = create<StoreState>((set, get) => {
       try {
         set({ isLoading: true });
         
-        // First, ensure we don't overwrite manually edited files
-        // This will update store state from IndexedDB and save it back correctly
+        // First, save current state to IndexedDB
         const saveResult = await get().saveDataToIndexedDB();
         if (!saveResult.success) {
           set({ isLoading: false });

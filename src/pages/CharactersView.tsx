@@ -31,7 +31,9 @@ import {
   Tab,
   Autocomplete,
   Tooltip,
-  InputAdornment
+  InputAdornment,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -49,12 +51,11 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CloseIcon from '@mui/icons-material/Close';
 import ReactMarkdown from 'react-markdown';
 import { useStore } from '../store';
-import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import { AssetManager } from '../services/assetManager';
-import { Character } from '../store';
+import { Character, Item } from '../store';
 import MarkdownContent from '../components/MarkdownContent';
 import AssetViewer from '../components/AssetViewer';
-import PDFViewer from '../components/PDFViewer';
+import PDFViewerDialog from '../components/PDFViewerDialog';
 
 export const CharactersView: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -78,6 +79,18 @@ export const CharactersView: React.FC = () => {
     saveDataToIndexedDB,
     locations
   } = useStore();
+  
+  // Add state for item editing
+  const [newItem, setNewItem] = useState<Item>({
+    id: crypto.randomUUID(),
+    name: '',
+    description: '',
+    quantity: 1,
+    price: undefined
+  });
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   // Filter characters based on search query
   const filteredCharacters = React.useMemo(() => {
@@ -112,15 +125,25 @@ export const CharactersView: React.FC = () => {
     });
   }, [characters, searchQuery, locations]);
   
-  // New character form data
-  const [newCharacter, setNewCharacter] = useState({
+  // Update the newCharacter state to include inventory property
+  const [newCharacter, setNewCharacter] = useState<{
+    name: string;
+    description: string;
+    type: 'npc' | 'merchant' | 'enemy' | 'player';
+    locationId: string;
+    descriptionType: 'markdown' | 'image' | 'pdf';
+    descriptionAssetName: string;
+    hp: number | string;
+    inventory?: Item[]; // Add inventory property
+  }>({
     name: '',
     description: '',
-    type: 'npc' as 'npc' | 'merchant' | 'enemy' | 'player',
+    type: 'npc',
     locationId: '',
-    descriptionType: 'markdown' as 'markdown' | 'image' | 'pdf',
+    descriptionType: 'markdown',
     descriptionAssetName: '',
-    hp: 10 as number | string  // Modified to allow string during editing
+    hp: 10,
+    inventory: [] // Initialize as empty array
   });
   
   // Currently editing character id
@@ -145,7 +168,8 @@ export const CharactersView: React.FC = () => {
       type: newCharacter.type,
       hp: typeof newCharacter.hp === 'string' 
            ? (parseInt(newCharacter.hp) || 1) 
-           : (newCharacter.hp || 1)  // Ensure we always have a valid number
+           : (newCharacter.hp || 1),  // Ensure we always have a valid number
+      inventory: newCharacter.inventory // Add the inventory to the new character
     };
     
     if (newCharacter.locationId) {
@@ -174,7 +198,8 @@ export const CharactersView: React.FC = () => {
       locationId: '',
       descriptionType: 'markdown',
       descriptionAssetName: '',
-      hp: 10
+      hp: 10,
+      inventory: []
     });
   };
   
@@ -190,7 +215,8 @@ export const CharactersView: React.FC = () => {
         locationId: character.locationId || '',
         descriptionType: character.descriptionType || 'markdown',
         descriptionAssetName: character.descriptionAssetName || '',
-        hp: character.hp
+        hp: character.hp,
+        inventory: character.inventory || []
       });
       setIsEditDialogOpen(true);
     }
@@ -206,7 +232,8 @@ export const CharactersView: React.FC = () => {
         hp: typeof newCharacter.hp === 'string' 
             ? (parseInt(newCharacter.hp) || 1) 
             : (newCharacter.hp || 1),  // Ensure we always have a valid number
-        descriptionType: newCharacter.descriptionType
+        descriptionType: newCharacter.descriptionType,
+        inventory: newCharacter.inventory // Add the inventory to the update
       };
       
       if (newCharacter.locationId) {
@@ -443,6 +470,80 @@ export const CharactersView: React.FC = () => {
         </Card>
       </Grid>
     );
+  };
+  
+  // Add function to handle adding new item to character
+  const handleAddItem = () => {
+    if (!newItem.name) return;
+    
+    // Create new item with a unique ID
+    const itemToAdd: Item = {
+      ...newItem,
+      id: crypto.randomUUID()
+    };
+    
+    // Add to character's inventory
+    const updatedInventory = [...(newCharacter.inventory || []), itemToAdd];
+    setNewCharacter({
+      ...newCharacter,
+      inventory: updatedInventory
+    });
+    
+    // Reset and close dialog
+    setNewItem({
+      id: crypto.randomUUID(),
+      name: '',
+      description: '',
+      quantity: 1,
+      price: undefined
+    });
+    setIsAddItemDialogOpen(false);
+  };
+  
+  // Add function to handle editing item
+  const handleEditItemClick = (itemId: string) => {
+    const item = newCharacter.inventory?.find(item => item.id === itemId);
+    if (!item) return;
+    
+    setNewItem({ ...item });
+    setEditingItemId(itemId);
+    setIsEditItemDialogOpen(true);
+  };
+  
+  // Add function to save edited item
+  const handleSaveEditedItem = () => {
+    if (!newItem.name || !editingItemId) return;
+    
+    // Update the item in inventory
+    const updatedInventory = newCharacter.inventory?.map(item => 
+      item.id === editingItemId ? { ...newItem } : item
+    ) || [];
+    
+    setNewCharacter({
+      ...newCharacter,
+      inventory: updatedInventory
+    });
+    
+    // Reset and close dialog
+    setNewItem({
+      id: crypto.randomUUID(),
+      name: '',
+      description: '',
+      quantity: 1,
+      price: undefined
+    });
+    setEditingItemId(null);
+    setIsEditItemDialogOpen(false);
+  };
+  
+  // Add function to delete item
+  const handleDeleteItem = (itemId: string) => {
+    const updatedInventory = newCharacter.inventory?.filter(item => item.id !== itemId) || [];
+    
+    setNewCharacter({
+      ...newCharacter,
+      inventory: updatedInventory
+    });
   };
   
   return (
@@ -738,6 +839,84 @@ export const CharactersView: React.FC = () => {
                 </Grid>
               </>
             ) : null}
+            
+            {/* Add Inventory Section */}
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                Inventory
+                {newCharacter.type === 'enemy' && (
+                  <Typography variant="caption" sx={{ ml: 1 }}>
+                    (Loot dropped when defeated)
+                  </Typography>
+                )}
+                {newCharacter.type === 'merchant' && (
+                  <Typography variant="caption" sx={{ ml: 1 }}>
+                    (Items for sale)
+                  </Typography>
+                )}
+              </Typography>
+              
+              <Button 
+                variant="outlined" 
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setNewItem({
+                    id: crypto.randomUUID(),
+                    name: '',
+                    description: '',
+                    quantity: 1,
+                    price: newCharacter.type === 'merchant' ? 0 : undefined
+                  });
+                  setIsAddItemDialogOpen(true);
+                }}
+                sx={{ mb: 2 }}
+              >
+                Add Item
+              </Button>
+              
+              {(!newCharacter.inventory || newCharacter.inventory.length === 0) ? (
+                <Typography variant="body2" color="text.secondary">
+                  No items in inventory
+                </Typography>
+              ) : (
+                <List>
+                  {newCharacter.inventory.map((item) => (
+                    <ListItem 
+                      key={item.id}
+                      secondaryAction={
+                        <Box>
+                          <IconButton edge="end" onClick={() => handleEditItemClick(item.id)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton edge="end" onClick={() => handleDeleteItem(item.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      }
+                    >
+                      <ListItemText 
+                        primary={item.name}
+                        secondary={
+                          <>
+                            {item.description}
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="body2" component="span">
+                                Quantity: {item.quantity}
+                              </Typography>
+                              {item.price !== undefined && (
+                                <Typography variant="body2" component="span" sx={{ ml: 2 }}>
+                                  Price: {item.price}
+                                </Typography>
+                              )}
+                            </Box>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -945,6 +1124,84 @@ export const CharactersView: React.FC = () => {
                 </Grid>
               </>
             ) : null}
+            
+            {/* Add Inventory Section */}
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                Inventory
+                {newCharacter.type === 'enemy' && (
+                  <Typography variant="caption" sx={{ ml: 1 }}>
+                    (Loot dropped when defeated)
+                  </Typography>
+                )}
+                {newCharacter.type === 'merchant' && (
+                  <Typography variant="caption" sx={{ ml: 1 }}>
+                    (Items for sale)
+                  </Typography>
+                )}
+              </Typography>
+              
+              <Button 
+                variant="outlined" 
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setNewItem({
+                    id: crypto.randomUUID(),
+                    name: '',
+                    description: '',
+                    quantity: 1,
+                    price: newCharacter.type === 'merchant' ? 0 : undefined
+                  });
+                  setIsAddItemDialogOpen(true);
+                }}
+                sx={{ mb: 2 }}
+              >
+                Add Item
+              </Button>
+              
+              {(!newCharacter.inventory || newCharacter.inventory.length === 0) ? (
+                <Typography variant="body2" color="text.secondary">
+                  No items in inventory
+                </Typography>
+              ) : (
+                <List>
+                  {newCharacter.inventory.map((item) => (
+                    <ListItem 
+                      key={item.id}
+                      secondaryAction={
+                        <Box>
+                          <IconButton edge="end" onClick={() => handleEditItemClick(item.id)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton edge="end" onClick={() => handleDeleteItem(item.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      }
+                    >
+                      <ListItemText 
+                        primary={item.name}
+                        secondary={
+                          <>
+                            {item.description}
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="body2" component="span">
+                                Quantity: {item.quantity}
+                              </Typography>
+                              {item.price !== undefined && (
+                                <Typography variant="body2" component="span" sx={{ ml: 2 }}>
+                                  Price: {item.price}
+                                </Typography>
+                              )}
+                            </Box>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -970,120 +1227,197 @@ export const CharactersView: React.FC = () => {
         </Alert>
       </Snackbar>
       
-      {/* PDF Viewer Dialog */}
-      <Dialog 
-        open={pdfViewerOpen} 
-        onClose={() => setPdfViewerOpen(false)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            overflow: 'hidden'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
-          p: 1.5,
-          bgcolor: 'background.paper'
-        }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" component="div">
-              {currentPdfAsset}
-            </Typography>
-            <IconButton 
-              onClick={() => setPdfViewerOpen(false)}
-              size="small"
-              edge="end"
-              aria-label="close"
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, height: '75vh' }}>
-          {currentPdfAsset && (
-            <PDFViewer 
-              assetName={currentPdfAsset} 
-              height="100%" 
-              width="100%" 
-              allowDownload={true}
-              showTopBar={false}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-      
       {/* Markdown Content Dialog */}
-      <Dialog 
-        open={markdownDialogOpen} 
-        onClose={() => setMarkdownDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            overflow: 'hidden'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
-          p: 1.5,
-          bgcolor: 'background.paper'
-        }}>
+      <Dialog open={markdownDialogOpen} onClose={() => setMarkdownDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" component="div">
-              {currentMarkdownTitle}
-            </Typography>
-            <IconButton 
-              onClick={() => setMarkdownDialogOpen(false)}
-              size="small"
-              edge="end"
-              aria-label="close"
-            >
+            <Typography variant="h6">{currentMarkdownTitle}</Typography>
+            <IconButton onClick={() => setMarkdownDialogOpen(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
-          <MarkdownContent 
-            content={currentMarkdownContent} 
-            sx={{
-              '& table': {
-                display: 'block',
-                width: '100%',
-                overflow: 'auto',
-                marginBottom: 2,
-                borderCollapse: 'collapse',
-              },
-              '& th, & td': {
-                px: 2,
-                py: 1,
-                border: '1px solid rgba(0, 0, 0, 0.12)',
-              },
-              '& th': {
-                bgcolor: 'rgba(0, 0, 0, 0.03)',
-              },
-              '& h1, & h2, & h3, & h4, & h5, & h6': {
-                mt: 3,
-                mb: 2,
-              },
-              '& p': {
-                mb: 2,
-              },
-              '& ul, & ol': {
-                ml: 2,
-                mb: 2,
-              }
-            }}
-          />
+        <DialogContent>
+          <Box sx={{ mt: 2, p: 1 }}>
+            <MarkdownContent content={currentMarkdownContent} />
+          </Box>
         </DialogContent>
       </Dialog>
       
-      {/* Include the AudioTrackPanel */}
-      <AudioTrackPanel />
+      {/* PDF Viewer Dialog */}
+      <PDFViewerDialog
+        assetName={currentPdfAsset}
+        open={pdfViewerOpen}
+        onClose={() => setPdfViewerOpen(false)}
+      />
+      
+      {/* Add Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onClose={() => setIsAddItemDialogOpen(false)}>
+        <DialogTitle>Add Item</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Item Name"
+                fullWidth
+                value={newItem.name}
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={newItem.description}
+                onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <TextField
+                label="Quantity"
+                fullWidth
+                type="number"
+                value={newItem.quantity}
+                onChange={(e) => setNewItem({ 
+                  ...newItem, 
+                  quantity: parseInt(e.target.value) || 1 
+                })}
+                InputProps={{ inputProps: { min: 1 } }}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={newItem.price !== undefined} 
+                    onChange={(e) => {
+                      setNewItem({
+                        ...newItem,
+                        price: e.target.checked ? 0 : undefined
+                      });
+                    }}
+                  />
+                }
+                label="Has Price"
+              />
+              
+              {newItem.price !== undefined && (
+                <TextField
+                  label="Price"
+                  fullWidth
+                  type="number"
+                  value={newItem.price}
+                  onChange={(e) => setNewItem({ 
+                    ...newItem, 
+                    price: parseInt(e.target.value) || 0 
+                  })}
+                  InputProps={{ inputProps: { min: 0 } }}
+                  sx={{ mt: 1 }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsAddItemDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleAddItem} 
+            variant="contained"
+            disabled={!newItem.name}
+          >
+            Add Item
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditItemDialogOpen} onClose={() => setIsEditItemDialogOpen(false)}>
+        <DialogTitle>Edit Item</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Item Name"
+                fullWidth
+                value={newItem.name}
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={newItem.description}
+                onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <TextField
+                label="Quantity"
+                fullWidth
+                type="number"
+                value={newItem.quantity}
+                onChange={(e) => setNewItem({ 
+                  ...newItem, 
+                  quantity: parseInt(e.target.value) || 1 
+                })}
+                InputProps={{ inputProps: { min: 1 } }}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={newItem.price !== undefined} 
+                    onChange={(e) => {
+                      setNewItem({
+                        ...newItem,
+                        price: e.target.checked ? 0 : undefined
+                      });
+                    }}
+                  />
+                }
+                label="Has Price"
+              />
+              
+              {newItem.price !== undefined && (
+                <TextField
+                  label="Price"
+                  fullWidth
+                  type="number"
+                  value={newItem.price}
+                  onChange={(e) => setNewItem({ 
+                    ...newItem, 
+                    price: parseInt(e.target.value) || 0 
+                  })}
+                  InputProps={{ inputProps: { min: 0 } }}
+                  sx={{ mt: 1 }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsEditItemDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveEditedItem} 
+            variant="contained"
+            disabled={!newItem.name}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }; 

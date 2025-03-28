@@ -107,8 +107,11 @@ const JSONEditor: React.FC<JSONEditorProps> = ({ fileName, onSave }) => {
     try {
       setSaving(true);
       
+      // Parse the JSON data
+      const parsedData = JSON.parse(jsonContent);
+      
       // Create asset entry directly with the json content
-      const result = await AssetManager.saveDataObject(fileName, JSON.parse(jsonContent));
+      const result = await AssetManager.saveDataObject(fileName, parsedData);
       
       if (result.success) {
         setSaveMessage({
@@ -119,13 +122,19 @@ const JSONEditor: React.FC<JSONEditorProps> = ({ fileName, onSave }) => {
         // Update original content to reflect saved state
         setOriginalContent(jsonContent);
         
-        // If this is one of the core state files, refresh the store state
+        // If this is one of the core state files, update the store's state
         if (fileName === 'locations.json' || fileName === 'characters.json' || fileName === 'combats.json') {
           try {
-            // Trigger a refresh of the store's data from IndexedDB
-            await useStore.getState().refreshAssets();
+            // Update the store state
+            if (fileName === 'locations.json') {
+              useStore.setState({ locations: parsedData });
+            } else if (fileName === 'characters.json') {
+              useStore.setState({ characters: parsedData });
+            } else if (fileName === 'combats.json') {
+              useStore.setState({ combats: parsedData });
+            }
           } catch (err) {
-            console.error('Error refreshing store after JSON save:', err);
+            console.error('Error updating store state after JSON save:', err);
           }
         }
         

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Button, Dialog, DialogContent, Divider, Paper } from '@mui/material';
 import { useStore } from '../store';
-import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import { AssetDropZone } from '../components/AssetDropZone';
 import { AssetManager } from '../services/assetManager';
 import MarkdownContent from '../components/MarkdownContent';
@@ -123,8 +122,6 @@ function example() {
         </Grid>
       </Grid>
       
-      <AudioTrackPanel />
-
       <Dialog 
         open={isAssetManagerOpen} 
         onClose={handleAssetManagerClose}

@@ -1265,9 +1265,6 @@ export const LocationsView: React.FC = () => {
         message={snackbarMessage}
       />
       
-      {/* Include the AudioTrackPanel */}
-      <AudioTrackPanel />
-      
       {/* Description Dialog */}
       <Dialog
         open={showDescriptionDialog}

@@ -52,7 +52,6 @@ import { useStore } from '../store';
 import { CustomLocation, Character, Item, Combat } from '../store';
 import NorthIcon from '@mui/icons-material/North';
 import { Howl } from 'howler';
-import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import { AssetDropZone } from '../components/AssetDropZone';
 import { AssetManager } from '../services/assetManager';
 import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
@@ -2180,8 +2179,6 @@ export const MapView: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-
-      <AudioTrackPanel />
 
       {/* Edit mode indicator */}
       {editMode && (

@@ -348,6 +348,10 @@ Example locations.json:
   const handleSaveData = async () => {
     setIsSaving(true);
     try {
+      // Refresh the assets first to get the latest data
+      await useStore.getState().refreshAssets();
+      
+      // Then save the current state
       const result = await saveDataToIndexedDB();
       setResult(result);
       

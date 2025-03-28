@@ -25,7 +25,9 @@ import {
   Divider,
   ButtonGroup,
   InputAdornment,
-  Paper
+  Paper,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,8 +36,9 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useStore } from '../store';
-import { Combat, Character } from '../store';
+import { Combat, Character, Item } from '../store';
 import { AssetManager } from '../services/assetManager';
+import { Star } from '@mui/icons-material';
 
 // Interface for enemy instances with count
 interface EnemyInstance {
@@ -61,6 +64,18 @@ export const CombatsView: React.FC = () => {
     difficulty: 'medium',
   });
 
+  // Add state for reward item management
+  const [newRewardItem, setNewRewardItem] = useState<Item>({
+    id: crypto.randomUUID(),
+    name: '',
+    description: '',
+    quantity: 1,
+    price: undefined
+  });
+  const [isAddRewardDialogOpen, setIsAddRewardDialogOpen] = useState(false);
+  const [isEditRewardDialogOpen, setIsEditRewardDialogOpen] = useState(false);
+  const [editingRewardId, setEditingRewardId] = useState<string | null>(null);
+  
   // Filter combats based on search query
   const filteredCombats = React.useMemo(() => {
     if (!searchQuery.trim()) return combats;
@@ -269,6 +284,80 @@ export const CombatsView: React.FC = () => {
     }
   };
 
+  // Function to handle adding a new reward item
+  const handleAddReward = () => {
+    if (!newRewardItem.name) return;
+    
+    // Create new item with a unique ID
+    const itemToAdd: Item = {
+      ...newRewardItem,
+      id: crypto.randomUUID()
+    };
+    
+    // Add to combat rewards
+    const updatedRewards = [...(editedCombat.rewards || []), itemToAdd];
+    setEditedCombat(prev => ({
+      ...prev,
+      rewards: updatedRewards
+    }));
+    
+    // Reset and close dialog
+    setNewRewardItem({
+      id: crypto.randomUUID(),
+      name: '',
+      description: '',
+      quantity: 1,
+      price: undefined
+    });
+    setIsAddRewardDialogOpen(false);
+  };
+  
+  // Function to handle editing a reward item
+  const handleEditRewardClick = (itemId: string) => {
+    const item = editedCombat.rewards?.find(item => item.id === itemId);
+    if (!item) return;
+    
+    setNewRewardItem({ ...item });
+    setEditingRewardId(itemId);
+    setIsEditRewardDialogOpen(true);
+  };
+  
+  // Function to save edited reward item
+  const handleSaveEditedReward = () => {
+    if (!newRewardItem.name || !editingRewardId) return;
+    
+    // Update the item in rewards
+    const updatedRewards = editedCombat.rewards?.map(item => 
+      item.id === editingRewardId ? { ...newRewardItem } : item
+    ) || [];
+    
+    setEditedCombat(prev => ({
+      ...prev,
+      rewards: updatedRewards
+    }));
+    
+    // Reset and close dialog
+    setNewRewardItem({
+      id: crypto.randomUUID(),
+      name: '',
+      description: '',
+      quantity: 1,
+      price: undefined
+    });
+    setEditingRewardId(null);
+    setIsEditRewardDialogOpen(false);
+  };
+  
+  // Function to delete a reward item
+  const handleDeleteReward = (itemId: string) => {
+    const updatedRewards = editedCombat.rewards?.filter(item => item.id !== itemId) || [];
+    
+    setEditedCombat(prev => ({
+      ...prev,
+      rewards: updatedRewards
+    }));
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -378,10 +467,11 @@ export const CombatsView: React.FC = () => {
                               size="small"
                               color="success"
                               variant="outlined"
+                              sx={{ mr: 1, mb: 1 }}
                             />
                           ))}
                           {combat.playerCharacters.length === 0 && (
-                            <Typography variant="body2" color="text.secondary">No players assigned</Typography>
+                            <Typography variant="body2" color="text.secondary">No player characters assigned</Typography>
                           )}
                         </Box>
                         
@@ -409,6 +499,16 @@ export const CombatsView: React.FC = () => {
                             <Typography variant="body2" color="text.secondary">No enemies assigned</Typography>
                           )}
                         </Box>
+                        
+                        {/* Add rewards indicator */}
+                        {combat.rewards && combat.rewards.length > 0 && (
+                          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                            <Star sx={{ color: 'gold', fontSize: '1rem', mr: 0.5 }} />
+                            <Typography variant="body2" color="text.secondary">
+                              Rewards: {combat.rewards.length} item{combat.rewards.length !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                     <Box>
@@ -604,6 +704,78 @@ export const CombatsView: React.FC = () => {
               )}
             </Box>
 
+            {/* Rewards Section */}
+            <Box sx={{ border: 1, borderColor: 'divider', p: 2, borderRadius: 1 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Rewards (Loot)
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', mb: 2 }}>
+                Items that will be available as loot after the combat is completed
+              </Typography>
+              
+              <Button 
+                variant="outlined" 
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setNewRewardItem({
+                    id: crypto.randomUUID(),
+                    name: '',
+                    description: '',
+                    quantity: 1,
+                    price: undefined
+                  });
+                  setIsAddRewardDialogOpen(true);
+                }}
+                sx={{ mb: 2 }}
+              >
+                Add Reward Item
+              </Button>
+              
+              {(!editedCombat.rewards || editedCombat.rewards.length === 0) ? (
+                <Typography variant="body2" color="text.secondary">
+                  No reward items added. Combat will not drop any loot.
+                </Typography>
+              ) : (
+                <List>
+                  {editedCombat.rewards.map((item) => (
+                    <ListItem 
+                      key={item.id}
+                      divider
+                      secondaryAction={
+                        <Box>
+                          <IconButton edge="end" onClick={() => handleEditRewardClick(item.id)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton edge="end" onClick={() => handleDeleteReward(item.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      }
+                    >
+                      <ListItemText 
+                        primary={item.name}
+                        secondary={
+                          <>
+                            {item.description}
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="body2" component="span">
+                                Quantity: {item.quantity}
+                              </Typography>
+                              {item.price !== undefined && (
+                                <Typography variant="body2" component="span" sx={{ ml: 2 }}>
+                                  Price: {item.price}
+                                </Typography>
+                              )}
+                            </Box>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Box>
+
             <FormControl fullWidth>
               <InputLabel>Difficulty</InputLabel>
               <Select
@@ -680,6 +852,174 @@ export const CombatsView: React.FC = () => {
           <Button onClick={() => setIsDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSave} variant="contained" color="primary">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Add Reward Dialog */}
+      <Dialog open={isAddRewardDialogOpen} onClose={() => setIsAddRewardDialogOpen(false)}>
+        <DialogTitle>Add Reward Item</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Item Name"
+                fullWidth
+                value={newRewardItem.name}
+                onChange={(e) => setNewRewardItem({ ...newRewardItem, name: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={newRewardItem.description}
+                onChange={(e) => setNewRewardItem({ ...newRewardItem, description: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <TextField
+                label="Quantity"
+                fullWidth
+                type="number"
+                value={newRewardItem.quantity}
+                onChange={(e) => setNewRewardItem({ 
+                  ...newRewardItem, 
+                  quantity: parseInt(e.target.value) || 1 
+                })}
+                InputProps={{ inputProps: { min: 1 } }}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={newRewardItem.price !== undefined} 
+                    onChange={(e) => {
+                      setNewRewardItem({
+                        ...newRewardItem,
+                        price: e.target.checked ? 0 : undefined
+                      });
+                    }}
+                  />
+                }
+                label="Has Price"
+              />
+              
+              {newRewardItem.price !== undefined && (
+                <TextField
+                  label="Price"
+                  fullWidth
+                  type="number"
+                  value={newRewardItem.price}
+                  onChange={(e) => setNewRewardItem({ 
+                    ...newRewardItem, 
+                    price: parseInt(e.target.value) || 0 
+                  })}
+                  InputProps={{ inputProps: { min: 0 } }}
+                  sx={{ mt: 1 }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsAddRewardDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleAddReward} 
+            variant="contained"
+            disabled={!newRewardItem.name}
+          >
+            Add Item
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Edit Reward Dialog */}
+      <Dialog open={isEditRewardDialogOpen} onClose={() => setIsEditRewardDialogOpen(false)}>
+        <DialogTitle>Edit Reward Item</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Item Name"
+                fullWidth
+                value={newRewardItem.name}
+                onChange={(e) => setNewRewardItem({ ...newRewardItem, name: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={newRewardItem.description}
+                onChange={(e) => setNewRewardItem({ ...newRewardItem, description: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <TextField
+                label="Quantity"
+                fullWidth
+                type="number"
+                value={newRewardItem.quantity}
+                onChange={(e) => setNewRewardItem({ 
+                  ...newRewardItem, 
+                  quantity: parseInt(e.target.value) || 1 
+                })}
+                InputProps={{ inputProps: { min: 1 } }}
+              />
+            </Grid>
+            
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={newRewardItem.price !== undefined} 
+                    onChange={(e) => {
+                      setNewRewardItem({
+                        ...newRewardItem,
+                        price: e.target.checked ? 0 : undefined
+                      });
+                    }}
+                  />
+                }
+                label="Has Price"
+              />
+              
+              {newRewardItem.price !== undefined && (
+                <TextField
+                  label="Price"
+                  fullWidth
+                  type="number"
+                  value={newRewardItem.price}
+                  onChange={(e) => setNewRewardItem({ 
+                    ...newRewardItem, 
+                    price: parseInt(e.target.value) || 0 
+                  })}
+                  InputProps={{ inputProps: { min: 0 } }}
+                  sx={{ mt: 1 }}
+                />
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsEditRewardDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveEditedReward} 
+            variant="contained"
+            disabled={!newRewardItem.name}
+          >
+            Save Changes
           </Button>
         </DialogActions>
       </Dialog>

@@ -36,10 +36,11 @@ import {
   Close as CloseIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  Store as StoreIcon
+  Store as StoreIcon,
+  Star
 } from '@mui/icons-material';
 import { useStore } from '../store';
-import { Combat, Character } from '../store';
+import { Combat, Character, Item } from '../store';
 import MarkdownContent from './MarkdownContent';
 import AssetViewer from './AssetViewer';
 import PDFViewer from './PDFViewer';
@@ -53,6 +54,7 @@ interface CombatParticipant {
   maxHp: number;
   notes: string;
   isPlayerCharacter: boolean;
+  isDefeated?: boolean; // Add this new property
 }
 
 interface ActiveCombatViewProps {
@@ -88,6 +90,15 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   const [markdownDialogOpen, setMarkdownDialogOpen] = useState(false);
   const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
   const [currentMarkdownTitle, setCurrentMarkdownTitle] = useState('');
+  
+  // Add new state for loot dialog
+  const [lootDialogOpen, setLootDialogOpen] = useState(false);
+  const [currentLoot, setCurrentLoot] = useState<Item[]>([]);
+  const [defeatedEnemy, setDefeatedEnemy] = useState<Character | null>(null);
+  
+  // Add new state for combat rewards
+  const [combatCompleted, setCombatCompleted] = useState(false);
+  const [showCombatRewards, setShowCombatRewards] = useState(false);
   
   // Initialize audio only once when the component mounts
   useEffect(() => {
@@ -276,14 +287,36 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   
   // Handle updating a participant's HP
   const handleUpdateHp = (participantId: string, hp: number | string) => {
-    const numHp = typeof hp === 'string' ? 
-      (parseInt(hp) || 0) : 
-      hp;
+    const numHp = typeof hp === 'string' ? parseInt(hp) || 0 : hp;
     
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) return;
+    
+    // Check if this is an enemy being reduced to 0 or less HP and not already defeated
+    if (!participant.isPlayerCharacter && 
+        numHp <= 0 && 
+        displayHp(participant.currentHp) > 0 && 
+        !participant.isDefeated) {
+      
+      // Mark the participant as defeated
+      const updatedParticipants = participants.map(p => 
+        p.id === participantId ? { ...p, currentHp: 0, isDefeated: true } : p
+      );
+      setParticipants(updatedParticipants);
+      
+      // If the enemy has an inventory (loot), show the loot dialog
+      if (participant.character.inventory && participant.character.inventory.length > 0) {
+        setDefeatedEnemy(participant.character);
+        setCurrentLoot(participant.character.inventory);
+        setLootDialogOpen(true);
+      }
+      
+      return;
+    }
+    
+    // Regular HP update
     setParticipants(participants.map(p => 
-      p.id === participantId ? 
-        { ...p, currentHp: Math.max(0, Math.min(numHp, p.maxHp)) } : 
-        p
+      p.id === participantId ? { ...p, currentHp: hp } : p
     ));
   };
   
@@ -354,6 +387,41 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
     setPdfViewerOpen(true);
   };
   
+  // Add function to handle collecting loot
+  const handleCollectLoot = () => {
+    // Here you would implement logic to distribute the loot to players
+    // For now, we just close the dialog
+    setLootDialogOpen(false);
+    setCurrentLoot([]);
+    setDefeatedEnemy(null);
+  };
+  
+  // Add useEffect to check if all enemies are defeated
+  useEffect(() => {
+    // Check if all enemies are defeated
+    const allEnemiesDefeated = participants.every(p => 
+      p.isPlayerCharacter || (displayHp(p.currentHp) <= 0 || p.isDefeated)
+    );
+    
+    // Only update if combat wasn't already completed
+    if (allEnemiesDefeated && !combatCompleted && participants.some(p => !p.isPlayerCharacter)) {
+      setCombatCompleted(true);
+    }
+  }, [participants, combatCompleted]);
+  
+  // Function to handle viewing combat rewards
+  const handleViewCombatRewards = () => {
+    setShowCombatRewards(true);
+  };
+  
+  // Function to handle collecting all rewards
+  const handleCollectAllRewards = () => {
+    // Here you would implement the logic to distribute rewards to players
+    // For now, we just close the dialog
+    setShowCombatRewards(false);
+    setCombatCompleted(false);
+  };
+  
   return (
     <Box sx={{ 
       height: '100%', 
@@ -394,6 +462,15 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h5">{combat.name}</Typography>
+          
+          {/* Add Combat completed indicator */}
+          {combatCompleted && (
+            <Chip 
+              label="Combat Completed" 
+              color="success" 
+              sx={{ ml: 2 }}
+            />
+          )}
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -407,6 +484,19 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
             color="secondary"
             variant="outlined"
           />
+          
+          {/* Show rewards button when combat is completed */}
+          {combatCompleted && combat.rewards && combat.rewards.length > 0 && (
+            <Button 
+              variant="contained" 
+              color="success"
+              onClick={handleViewCombatRewards}
+              startIcon={<Star />}
+            >
+              View Rewards
+            </Button>
+          )}
+          
           <Button 
             variant="contained" 
             color="primary"
@@ -1003,6 +1093,129 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
             }}
           />
         </DialogContent>
+      </Dialog>
+      
+      {/* Add the loot dialog */}
+      <Dialog 
+        open={lootDialogOpen} 
+        onClose={() => setLootDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {defeatedEnemy ? `Loot from ${defeatedEnemy.name}` : 'Loot'}
+        </DialogTitle>
+        <DialogContent>
+          {currentLoot.length > 0 ? (
+            <List>
+              {currentLoot.map((item) => (
+                <ListItem key={item.id}>
+                  <ListItemText 
+                    primary={item.name} 
+                    secondary={
+                      <>
+                        {item.description}
+                        <Box sx={{ mt: 1 }}>
+                          <strong>Quantity:</strong> {item.quantity}
+                          {item.price !== undefined && (
+                            <span style={{ marginLeft: '1rem' }}>
+                              <strong>Price:</strong> {item.price}
+                            </span>
+                          )}
+                        </Box>
+                      </>
+                    } 
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography>No loot available.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLootDialogOpen(false)}>Close</Button>
+          <Button 
+            onClick={handleCollectLoot} 
+            color="primary" 
+            variant="contained"
+          >
+            Collect All
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Add rewards dialog */}
+      <Dialog 
+        open={showCombatRewards} 
+        onClose={() => setShowCombatRewards(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(255, 205, 86, 0.3)',
+          background: 'linear-gradient(to right, rgba(255, 205, 86, 0.1), transparent)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Star sx={{ color: 'gold', mr: 1 }} />
+            <Typography variant="h6">Combat Rewards</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {(!combat.rewards || combat.rewards.length === 0) ? (
+            <Typography sx={{ py: 3, textAlign: 'center' }}>
+              No rewards available for this combat.
+            </Typography>
+          ) : (
+            <List sx={{ mt: 1 }}>
+              {combat.rewards.map((item) => (
+                <ListItem 
+                  key={item.id}
+                  divider
+                >
+                  <ListItemText 
+                    primary={
+                      <Typography variant="subtitle1">{item.name}</Typography>
+                    }
+                    secondary={
+                      <>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.description}
+                        </Typography>
+                        <Box sx={{ mt: 1, display: 'flex', gap: 2 }}>
+                          <Chip 
+                            label={`Quantity: ${item.quantity}`} 
+                            size="small" 
+                            variant="outlined" 
+                          />
+                          {item.price !== undefined && (
+                            <Chip 
+                              label={`Value: ${item.price}`} 
+                              size="small" 
+                              variant="outlined" 
+                              color="secondary"
+                            />
+                          )}
+                        </Box>
+                      </>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCombatRewards(false)}>Close</Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={handleCollectAllRewards}
+            startIcon={<AddCircleIcon />}
+          >
+            Collect All Rewards
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
