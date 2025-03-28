@@ -66,6 +66,9 @@ export const CharactersView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [currentPdfAsset, setCurrentPdfAsset] = useState('');
+  const [markdownDialogOpen, setMarkdownDialogOpen] = useState(false);
+  const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
+  const [currentMarkdownTitle, setCurrentMarkdownTitle] = useState('');
   
   const { 
     characters, 
@@ -321,22 +324,41 @@ export const CharactersView: React.FC = () => {
                 
                 <Box sx={{ mt: 1, mb: 2 }}>
                   {character.descriptionType === 'markdown' && (
-                    <MarkdownContent 
-                      content={character.description} 
-                      sx={{
-                        '& table': {
-                          display: 'block',
-                          maxWidth: '100%',
-                          overflow: 'auto',
-                          whiteSpace: 'nowrap',
-                        },
-                        '& th, & td': {
-                          px: 1,
-                          py: 0.5,
-                          fontSize: '0.8rem',
+                    <Box 
+                      sx={{ 
+                        maxHeight: '200px', 
+                        overflow: 'auto',
+                        cursor: 'pointer',
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        borderRadius: 1,
+                        p: 1,
+                        '&:hover': {
+                          bgcolor: 'rgba(0,0,0,0.03)',
                         }
                       }}
-                    />
+                      onClick={() => {
+                        setCurrentMarkdownTitle(character.name);
+                        setCurrentMarkdownContent(character.description);
+                        setMarkdownDialogOpen(true);
+                      }}
+                    >
+                      <MarkdownContent 
+                        content={character.description} 
+                        sx={{
+                          '& table': {
+                            display: 'block',
+                            maxWidth: '100%',
+                            overflow: 'auto',
+                            whiteSpace: 'nowrap',
+                          },
+                          '& th, & td': {
+                            px: 1,
+                            py: 0.5,
+                            fontSize: '0.8rem',
+                          }
+                        }}
+                      />
+                    </Box>
                   )}
                   {character.descriptionType === 'image' && character.descriptionAssetName && (
                     <Box sx={{ mt: 1, maxHeight: '150px', overflow: 'hidden' }}>
@@ -990,6 +1012,73 @@ export const CharactersView: React.FC = () => {
               showTopBar={false}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Markdown Content Dialog */}
+      <Dialog 
+        open={markdownDialogOpen} 
+        onClose={() => setMarkdownDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)', 
+          p: 1.5,
+          bgcolor: 'background.paper'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" component="div">
+              {currentMarkdownTitle}
+            </Typography>
+            <IconButton 
+              onClick={() => setMarkdownDialogOpen(false)}
+              size="small"
+              edge="end"
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
+          <MarkdownContent 
+            content={currentMarkdownContent} 
+            sx={{
+              '& table': {
+                display: 'block',
+                width: '100%',
+                overflow: 'auto',
+                marginBottom: 2,
+                borderCollapse: 'collapse',
+              },
+              '& th, & td': {
+                px: 2,
+                py: 1,
+                border: '1px solid rgba(0, 0, 0, 0.12)',
+              },
+              '& th': {
+                bgcolor: 'rgba(0, 0, 0, 0.03)',
+              },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                mt: 3,
+                mb: 2,
+              },
+              '& p': {
+                mb: 2,
+              },
+              '& ul, & ol': {
+                ml: 2,
+                mb: 2,
+              }
+            }}
+          />
         </DialogContent>
       </Dialog>
       

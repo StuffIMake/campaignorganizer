@@ -22,7 +22,8 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle
+  DialogTitle,
+  TextField
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,8 +32,11 @@ import HelpIcon from '@mui/icons-material/Help';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 import { AssetManager, AssetType } from '../services/assetManager';
 import { useStore } from '../store';
+import JSONEditor from './JSONEditor';
 
 interface AssetDropZoneProps {
   onAssetImport?: () => void;
@@ -68,6 +72,12 @@ export const AssetDropZone: React.FC<AssetDropZoneProps> = ({
   // Asset addition state
   const [currentAssetType, setCurrentAssetType] = useState<AssetType>('audio');
   const [isAddAssetDialogOpen, setIsAddAssetDialogOpen] = useState(false);
+  
+  // JSON Editor state
+  const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
+  const [jsonFileToEdit, setJsonFileToEdit] = useState<string>('');
+  const [isCreateJsonOpen, setIsCreateJsonOpen] = useState(false);
+  const [newJsonFileName, setNewJsonFileName] = useState('');
 
   // Check for assets on component mount and load asset lists
   useEffect(() => {
@@ -385,6 +395,79 @@ Example locations.json:
     }
   };
   
+  // Handle opening the JSON editor
+  const handleEditJson = (fileName: string) => {
+    setJsonFileToEdit(fileName);
+    setIsJsonEditorOpen(true);
+  };
+  
+  // Handle closing the JSON editor
+  const handleCloseJsonEditor = () => {
+    setIsJsonEditorOpen(false);
+    setJsonFileToEdit('');
+  };
+  
+  // Handle JSON editor save
+  const handleJsonSave = async (success: boolean) => {
+    if (success) {
+      // Reload asset lists after successful save
+      await loadAssetLists();
+    }
+  };
+  
+  // Handle creating a new JSON file
+  const handleCreateJson = () => {
+    setIsCreateJsonOpen(true);
+  };
+  
+  // Handle new JSON file name change
+  const handleNewJsonNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let fileName = e.target.value;
+    
+    // Enforce .json extension
+    if (fileName && !fileName.toLowerCase().endsWith('.json')) {
+      fileName += '.json';
+    }
+    
+    setNewJsonFileName(fileName);
+  };
+  
+  // Create a new empty JSON file
+  const handleCreateNewJsonFile = async () => {
+    if (!newJsonFileName) return;
+    
+    setIsProcessing(true);
+    try {
+      // Create a new empty JSON object
+      const emptyJson = {};
+      
+      // Save it to IndexedDB
+      const result = await AssetManager.saveDataObject(newJsonFileName, emptyJson);
+      
+      if (result.success) {
+        setResult(result);
+        // Reload asset lists
+        await loadAssetLists();
+        // Close the dialog
+        setIsCreateJsonOpen(false);
+        setNewJsonFileName('');
+        
+        // Open the editor for the new file
+        setJsonFileToEdit(newJsonFileName);
+        setIsJsonEditorOpen(true);
+      } else {
+        setResult(result);
+      }
+    } catch (error) {
+      setResult({
+        success: false,
+        message: `Error creating JSON file: ${error instanceof Error ? error.message : String(error)}`
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
   // Render asset list for a specific type
   const renderAssetList = (type: AssetType, assets: string[]) => {
     if (isLoadingAssets) {
@@ -407,6 +490,7 @@ Example locations.json:
       <List dense>
         {assets.map((asset: string) => {
           const isPdf = type === 'images' && asset.toLowerCase().endsWith('.pdf');
+          const isJson = type === 'data' && asset.toLowerCase().endsWith('.json');
           return (
             <ListItem key={asset}>
               <ListItemText 
@@ -418,6 +502,11 @@ Example locations.json:
                 } 
               />
               <ListItemSecondaryAction>
+                {isJson && (
+                  <IconButton edge="end" onClick={() => handleEditJson(asset)} sx={{ mr: 1 }}>
+                    <EditIcon />
+                  </IconButton>
+                )}
                 <IconButton edge="end" onClick={() => handleDeleteAsset(type, asset)}>
                   <DeleteIcon />
                 </IconButton>
@@ -629,15 +718,27 @@ Example locations.json:
               </Box>
               
               <Box sx={{ p: 1 }}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<UploadFileIcon />}
-                  sx={{ mb: 1 }}
-                  onClick={() => handleAddAssetClick(tabValue === 0 ? 'audio' : tabValue === 1 ? 'images' : 'data')}
-                >
-                  Add {tabValue === 0 ? 'Audio' : tabValue === 1 ? 'Image' : 'Data'} File
-                </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<UploadFileIcon />}
+                    onClick={() => handleAddAssetClick(tabValue === 0 ? 'audio' : tabValue === 1 ? 'images' : 'data')}
+                  >
+                    Add {tabValue === 0 ? 'Audio' : tabValue === 1 ? 'Image' : 'Data'} File
+                  </Button>
+                  
+                  {tabValue === 2 && (
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<AddIcon />}
+                      onClick={handleCreateJson}
+                    >
+                      Create New JSON
+                    </Button>
+                  )}
+                </Box>
                 
                 {/* Tab panels */}
                 <Box role="tabpanel" hidden={tabValue !== 0}>
@@ -704,6 +805,57 @@ Example locations.json:
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsAddAssetDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Dialog for creating a new JSON file */}
+      <Dialog open={isCreateJsonOpen} onClose={() => setIsCreateJsonOpen(false)}>
+        <DialogTitle>Create New JSON File</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Enter a filename for the new JSON file. The .json extension will be added automatically if needed.
+          </Typography>
+          
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Filename"
+            fullWidth
+            variant="outlined"
+            value={newJsonFileName}
+            onChange={handleNewJsonNameChange}
+            sx={{ mb: 2 }}
+            placeholder="e.g., mydata.json"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsCreateJsonOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleCreateNewJsonFile} 
+            variant="contained" 
+            color="primary"
+            disabled={!newJsonFileName}
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* JSON Editor Dialog */}
+      <Dialog 
+        open={isJsonEditorOpen} 
+        onClose={handleCloseJsonEditor}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogContent>
+          <JSONEditor 
+            fileName={jsonFileToEdit} 
+            onSave={handleJsonSave}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseJsonEditor}>Close</Button>
         </DialogActions>
       </Dialog>
     </>

@@ -345,13 +345,10 @@ export class AssetManager {
       // Convert object to JSON string
       const jsonString = JSON.stringify(data, null, 2);
       
-      // Use our Unicode-safe encoding method
-      const base64Data = this.encodeUnicode(jsonString);
-      
-      // Create asset entry
+      // Create asset entry - store JSON directly rather than base64 encoding it
       const asset: AssetEntry = {
         name,
-        data: base64Data,
+        data: jsonString,
         type: 'application/json',
         lastModified: Date.now()
       };
@@ -399,40 +396,28 @@ export class AssetManager {
       
       if (!asset) return null;
       
-      // Multiple decoding strategies
-      let jsonString = '';
-      let result = null;
-      
-      // Strategy 1: Try our Unicode decoder
+      // Try to parse the data as JSON
       try {
-        jsonString = this.decodeUnicode(asset.data);
-        result = JSON.parse(jsonString);
-        return result;
+        // If data is already a JSON string (new format)
+        if (typeof asset.data === 'string' && (asset.data.startsWith('{') || asset.data.startsWith('['))) {
+          return JSON.parse(asset.data);
+        }
+        
+        // Try to decode from base64 (old format)
+        const jsonString = this.decodeUnicode(asset.data);
+        return JSON.parse(jsonString);
       } catch (e) {
-        console.warn(`Unicode decode failed for ${name}:`, e);
-      }
-      
-      // Strategy 2: Try direct atob
-      try {
-        jsonString = window.atob(asset.data);
-        result = JSON.parse(jsonString);
-        return result;
-      } catch (e) {
-        console.warn(`Direct atob decode failed for ${name}:`, e);
-      }
-      
-      // Strategy 3: Check if data is already JSON
-      if (asset.data.startsWith('{') || asset.data.startsWith('[')) {
+        console.warn(`JSON parse failed for ${name}:`, e);
+        
+        // Last attempt - try direct atob
         try {
-          result = JSON.parse(asset.data);
-          return result;
+          const jsonString = window.atob(asset.data);
+          return JSON.parse(jsonString);
         } catch (e) {
-          console.warn(`Direct JSON parse failed for ${name}:`, e);
+          console.error(`All parsing methods failed for ${name}`);
+          return null;
         }
       }
-      
-      console.error(`All decoding methods failed for ${name}`);
-      return null;
     } catch (error) {
       console.error(`Error getting data object ${name}:`, error);
       return null;
@@ -494,7 +479,12 @@ export class AssetManager {
   // Add a single asset to the database
   static async addAsset(type: AssetType, file: File): Promise<{ success: boolean; message: string }> {
     try {
-      // Convert file to base64
+      // For JSON data files, handle them differently
+      if (type === 'data' && file.name.endsWith('.json')) {
+        return this.addJsonAsset(file);
+      }
+      
+      // All other file types - convert to base64
       const reader = new FileReader();
       const fileDataPromise = new Promise<string>((resolve, reject) => {
         reader.onload = () => {
@@ -547,6 +537,73 @@ export class AssetManager {
       return { 
         success: false, 
         message: `Error adding asset: ${error instanceof Error ? error.message : String(error)}` 
+      };
+    }
+  }
+  
+  // Add a JSON file as a data asset
+  static async addJsonAsset(file: File): Promise<{ success: boolean; message: string }> {
+    try {
+      // Read the JSON file as text
+      const reader = new FileReader();
+      const jsonTextPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = () => reject(new Error('Failed to read JSON file'));
+        reader.readAsText(file);
+      });
+      
+      const jsonText = await jsonTextPromise;
+      
+      // Validate that the content is valid JSON
+      try {
+        JSON.parse(jsonText);
+      } catch (e) {
+        return {
+          success: false,
+          message: `The file ${file.name} contains invalid JSON.`
+        };
+      }
+      
+      // Create asset entry - store the JSON directly
+      const asset: AssetEntry = {
+        name: file.name,
+        data: jsonText,
+        type: 'application/json',
+        lastModified: Date.now()
+      };
+      
+      // Open database connection
+      const db = await this.openDB();
+      const storeName = DATA_STORE;
+      
+      // Store the asset
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        
+        transaction.oncomplete = () => {
+          db.close();
+          resolve({ 
+            success: true, 
+            message: `Successfully added ${file.name} to data assets.` 
+          });
+        };
+        
+        transaction.onerror = (event) => {
+          db.close();
+          reject(new Error(`Failed to add JSON asset ${file.name}`));
+        };
+        
+        // Add the asset (will update if it already exists)
+        store.put(asset);
+      });
+    } catch (error) {
+      console.error(`Error adding JSON asset ${file.name}:`, error);
+      return { 
+        success: false, 
+        message: `Error adding JSON asset: ${error instanceof Error ? error.message : String(error)}` 
       };
     }
   }

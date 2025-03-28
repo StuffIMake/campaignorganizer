@@ -84,6 +84,11 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [currentPdfAsset, setCurrentPdfAsset] = useState('');
   
+  // Markdown dialog state
+  const [markdownDialogOpen, setMarkdownDialogOpen] = useState(false);
+  const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
+  const [currentMarkdownTitle, setCurrentMarkdownTitle] = useState('');
+  
   // Initialize audio only once when the component mounts
   useEffect(() => {
     if (!audioInitializedRef.current) {
@@ -626,7 +631,26 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
                       </Typography>
                       <Box sx={{ mt: 2 }}>
                         {selectedParticipant.character.descriptionType === 'markdown' && (
-                          <MarkdownContent content={selectedParticipant.character.description} />
+                          <Box 
+                            sx={{ 
+                              maxHeight: '200px', 
+                              overflow: 'auto',
+                              cursor: 'pointer',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: 1,
+                              p: 1,
+                              '&:hover': {
+                                bgcolor: 'rgba(255,255,255,0.05)',
+                              }
+                            }}
+                            onClick={() => {
+                              setCurrentMarkdownTitle(selectedParticipant.character.name);
+                              setCurrentMarkdownContent(selectedParticipant.character.description);
+                              setMarkdownDialogOpen(true);
+                            }}
+                          >
+                            <MarkdownContent content={selectedParticipant.character.description} />
+                          </Box>
                         )}
                         {selectedParticipant.character.descriptionType === 'image' && selectedParticipant.character.descriptionAssetName && (
                           <Box sx={{ mt: 1, maxHeight: '200px', overflow: 'hidden' }}>
@@ -904,6 +928,80 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
               showTopBar={false}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Markdown Content Dialog */}
+      <Dialog 
+        open={markdownDialogOpen} 
+        onClose={() => setMarkdownDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden',
+            bgcolor: 'rgba(40, 40, 40, 0.95)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)', 
+          p: 1.5,
+          bgcolor: 'rgba(30, 30, 30, 0.9)'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" component="div" sx={{ color: 'white' }}>
+              {currentMarkdownTitle}
+            </Typography>
+            <IconButton 
+              onClick={() => setMarkdownDialogOpen(false)}
+              size="small"
+              edge="end"
+              aria-label="close"
+              sx={{ color: 'white' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, height: '70vh', overflow: 'auto', color: 'white' }}>
+          <MarkdownContent 
+            content={currentMarkdownContent} 
+            sx={{
+              '& table': {
+                display: 'block',
+                width: '100%',
+                overflow: 'auto',
+                marginBottom: 2,
+                borderCollapse: 'collapse',
+              },
+              '& th, & td': {
+                px: 2,
+                py: 1,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+              },
+              '& th': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                mt: 3,
+                mb: 2,
+                color: 'white',
+              },
+              '& p': {
+                mb: 2,
+                color: 'white',
+              },
+              '& ul, & ol': {
+                ml: 2,
+                mb: 2,
+              },
+              '& a': {
+                color: '#90caf9',
+              }
+            }}
+          />
         </DialogContent>
       </Dialog>
     </Box>
