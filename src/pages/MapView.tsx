@@ -10,7 +10,16 @@ import {
   Tabs, 
   Tab, 
   CircularProgress, 
-  Typography
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Chip,
+  Avatar,
+  Divider,
+  Tooltip
 } from '../components/ui';
 import { AssetDropZone } from '../components/AssetDropZone';
 import { PDFViewerDialog } from '../components/PDFViewerDialog';
@@ -21,6 +30,13 @@ import {
   EditLocationDialog,
   MapControls
 } from '../components/map';
+import MarkdownContent from '../components/MarkdownContent';
+import {
+  PersonIcon,
+  StoreIcon,
+  SportsKabaddiIcon,
+  VideogameAssetIcon
+} from '../components/ui';
 
 export const MapView: React.FC = () => {
   const navigate = useNavigate();
@@ -54,6 +70,12 @@ export const MapView: React.FC = () => {
   const [isPdf, setIsPdf] = useState(false);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [currentPdfAsset, setCurrentPdfAsset] = useState('');
+
+  // Dialog states for character and combat details
+  const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
+  const [combatDialogOpen, setCombatDialogOpen] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [selectedCombat, setSelectedCombat] = useState<Combat | null>(null);
   
   // Initialize selected location from store
   useEffect(() => {
@@ -270,6 +292,76 @@ export const MapView: React.FC = () => {
     }
   };
   
+  // Get character type icon
+  const getCharacterTypeIcon = (type: string) => {
+    switch (type) {
+      case 'npc':
+        return <PersonIcon />;
+      case 'merchant':
+        return <StoreIcon />;
+      case 'enemy':
+        return <SportsKabaddiIcon />;
+      case 'player':
+        return <VideogameAssetIcon />;
+      default:
+        return <PersonIcon />;
+    }
+  };
+
+  // Format character type for display
+  const formatCharacterType = (type: string) => {
+    switch (type) {
+      case 'npc': return 'NPC';
+      case 'merchant': return 'Merchant';
+      case 'enemy': return 'Enemy';
+      case 'player': return 'Player';
+      default: return type;
+    }
+  };
+
+  // Get color based on character type
+  const getCharacterTypeColor = (type: string) => {
+    switch (type) {
+      case 'npc': return 'primary';
+      case 'merchant': return 'warning';
+      case 'enemy': return 'error';
+      case 'player': return 'success';
+      default: return 'default';
+    }
+  };
+
+  // Open character dialog
+  const handleCharacterClick = (character: Character) => {
+    setSelectedCharacter(character);
+    setCharacterDialogOpen(true);
+  };
+
+  // Open combat dialog
+  const handleCombatClick = (combat: Combat) => {
+    setSelectedCombat(combat);
+    setCombatDialogOpen(true);
+  };
+
+  // Start combat session
+  const handleStartCombat = () => {
+    if (selectedCombat) {
+      navigate('/combat-session', { state: { combatId: selectedCombat.id } });
+      setCombatDialogOpen(false);
+    }
+  };
+
+  // Close character dialog
+  const handleCloseCharacterDialog = () => {
+    setCharacterDialogOpen(false);
+    setSelectedCharacter(null);
+  };
+
+  // Close combat dialog
+  const handleCloseCombatDialog = () => {
+    setCombatDialogOpen(false);
+    setSelectedCombat(null);
+  };
+  
   // Loading state for the entire application
   if (isLoading) {
     return (
@@ -335,9 +427,13 @@ export const MapView: React.FC = () => {
             <LocationDetails
               location={selectedLocation}
               locations={locations}
+              characters={characters}
+              combats={combats}
               onBack={() => setShowDetails(false)}
               onLocationSelect={handleLocationSelect}
               playTrack={playTrack}
+              onCharacterClick={handleCharacterClick}
+              onCombatClick={handleCombatClick}
             />
           )
         )}
@@ -389,6 +485,214 @@ export const MapView: React.FC = () => {
         onClose={() => setPdfViewerOpen(false)}
         assetName={currentPdfAsset}
       />
+
+      {/* Character Details Dialog */}
+      <Dialog 
+        open={characterDialogOpen} 
+        onClose={handleCloseCharacterDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        {selectedCharacter && (
+          <>
+            <DialogTitle>
+              <Box className="flex items-center">
+                <Avatar className={
+                  selectedCharacter.type === 'npc' ? 'bg-blue-100 text-blue-500 mr-3' :
+                  selectedCharacter.type === 'merchant' ? 'bg-amber-100 text-amber-500 mr-3' :
+                  selectedCharacter.type === 'enemy' ? 'bg-red-100 text-red-500 mr-3' :
+                  'bg-green-100 text-green-500 mr-3'
+                }>
+                  {getCharacterTypeIcon(selectedCharacter.type)}
+                </Avatar>
+                <Typography variant="h6">
+                  {selectedCharacter.name}
+                </Typography>
+              </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+              <Box className="mb-4">
+                <Chip 
+                  label={formatCharacterType(selectedCharacter.type)}
+                  size="small"
+                  color={getCharacterTypeColor(selectedCharacter.type)}
+                  variant="soft"
+                  className="mr-2"
+                />
+                {selectedCharacter.hp && (
+                  <Chip 
+                    label={`HP: ${selectedCharacter.hp}`} 
+                    size="small" 
+                    color="error" 
+                    variant="soft"
+                  />
+                )}
+              </Box>
+              
+              <Typography variant="subtitle2" gutterBottom>Description:</Typography>
+              <Box className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded">
+                <MarkdownContent content={selectedCharacter.description} />
+              </Box>
+              
+              {selectedCharacter.inventory && selectedCharacter.inventory.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" gutterBottom>Inventory:</Typography>
+                  <Box className="p-3 bg-gray-100 dark:bg-gray-800 rounded">
+                    {selectedCharacter.inventory.map((item, index) => (
+                      <Box key={item.id} className="mb-2">
+                        <Box className="flex justify-between">
+                          <Typography variant="body1" className="font-medium">
+                            {item.name}
+                          </Typography>
+                          <Chip 
+                            label={`Qty: ${item.quantity}`} 
+                            size="small" 
+                            color="warning" 
+                            variant="soft"
+                          />
+                        </Box>
+                        {item.description && (
+                          <Typography variant="body2" className="text-gray-600 dark:text-gray-300">
+                            {item.description}
+                          </Typography>
+                        )}
+                        {index < selectedCharacter.inventory!.length - 1 && <Divider className="my-2" />}
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseCharacterDialog}>Close</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Combat Details Dialog */}
+      <Dialog 
+        open={combatDialogOpen} 
+        onClose={handleCloseCombatDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        {selectedCombat && (
+          <>
+            <DialogTitle>
+              <Box className="flex items-center">
+                <Avatar className="bg-red-100 text-red-500 mr-3">
+                  <SportsKabaddiIcon />
+                </Avatar>
+                <Typography variant="h6">
+                  {selectedCombat.name}
+                </Typography>
+              </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+              <Box className="mb-4">
+                <Chip 
+                  label={`Difficulty: ${selectedCombat.difficulty || 'Normal'}`} 
+                  size="small" 
+                  color="secondary"
+                  variant="soft"
+                  className="mr-2"
+                />
+                {selectedCombat.playerCharacters && (
+                  <Chip 
+                    label={`${selectedCombat.playerCharacters.length} players`} 
+                    size="small" 
+                    color="primary" 
+                    variant="soft"
+                  />
+                )}
+              </Box>
+              
+              <Typography variant="subtitle2" gutterBottom>Description:</Typography>
+              <Box className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded">
+                <MarkdownContent content={selectedCombat.description || "*No description provided*"} />
+              </Box>
+              
+              {selectedCombat.playerCharacters && selectedCombat.playerCharacters.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" gutterBottom>Player Characters:</Typography>
+                  <Box className="grid grid-cols-1 gap-2 mb-4">
+                    {selectedCombat.playerCharacters.map(pc => {
+                      const character = characters.find(c => c.id === pc.id);
+                      if (!character) return null;
+                      
+                      return (
+                        <Box 
+                          key={character.id} 
+                          className="p-2 bg-gray-100 dark:bg-gray-800 rounded flex items-center"
+                        >
+                          <Avatar className="bg-green-100 text-green-500 mr-2" sx={{ width: 32, height: 32 }}>
+                            <VideogameAssetIcon fontSize="small" />
+                          </Avatar>
+                          <Typography variant="body2">{character.name}</Typography>
+                          {character.hp && (
+                            <Chip 
+                              label={`HP: ${character.hp}`} 
+                              size="small" 
+                              color="error" 
+                              variant="soft"
+                              className="ml-auto"
+                            />
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </>
+              )}
+              
+              {selectedCombat.enemies && selectedCombat.enemies.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" gutterBottom>Enemies:</Typography>
+                  <Box className="grid grid-cols-1 gap-2">
+                    {selectedCombat.enemies.map(enemy => {
+                      const character = characters.find(c => c.id === enemy.id);
+                      if (!character) return null;
+                      
+                      return (
+                        <Box 
+                          key={character.id} 
+                          className="p-2 bg-gray-100 dark:bg-gray-800 rounded flex items-center"
+                        >
+                          <Avatar className="bg-red-100 text-red-500 mr-2" sx={{ width: 32, height: 32 }}>
+                            <SportsKabaddiIcon fontSize="small" />
+                          </Avatar>
+                          <Typography variant="body2">{character.name}</Typography>
+                          {character.hp && (
+                            <Chip 
+                              label={`HP: ${character.hp}`} 
+                              size="small" 
+                              color="error" 
+                              variant="soft"
+                              className="ml-auto"
+                            />
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseCombatDialog}>Close</Button>
+              <Button 
+                onClick={handleStartCombat} 
+                variant="contained"
+                color="error"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Start Combat Session
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 };

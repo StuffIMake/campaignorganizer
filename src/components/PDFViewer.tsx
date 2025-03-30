@@ -1,5 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  CircularProgress, 
+  Paper, 
+  Typography, 
+  IconButton 
+} from './ui';
 import { AssetManager } from '../services/assetManager';
+
+// Import the FileDownloadIcon or create a custom one
+const FileDownloadIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 interface PDFViewerProps {
   assetName: string;
   width?: string | number;
@@ -70,15 +97,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        width,
-        height,
-        border: '1px solid rgba(0, 0, 0, 0.12)',
-        borderRadius: 1
-      }}>
+      <Box className="flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded" style={{ width, height }}>
         <CircularProgress size={40} />
       </Box>
     );
@@ -86,14 +105,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   if (error || !pdfUrl) {
     return (
-      <Paper sx={{ 
-        p: 2, 
-        width, 
-        height: 'auto', 
-        bgcolor: 'background.paper',
-        border: '1px solid rgba(255, 0, 0, 0.3)',
-        color: 'error.main'
-      }}>
+      <Paper className="p-2 border border-red-300 dark:border-red-700 text-red-500 dark:text-red-400" style={{ width, height: 'auto' }}>
         <Typography variant="body1">
           {error || 'Could not load PDF'}
         </Typography>
@@ -104,28 +116,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   // Create a cleaner PDF viewing experience
   return (
     <Box 
-      sx={{ 
-        width, 
-        height, 
-        display: 'flex', 
-        flexDirection: 'column',
-        borderRadius: 1,
-        overflow: 'hidden',
-        boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.1)'
-      }}
+      className="flex flex-col rounded overflow-hidden shadow-md"
+      style={{ width, height }}
     >
       {showTopBar && allowDownload && (
         <Box 
-          sx={{ 
-            p: 1, 
-            display: 'flex', 
-            justifyContent: 'flex-end',
-            backgroundColor: 'background.paper',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
-          }}
+          className="p-1 flex justify-end bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
         >
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: '80%' }}>
+          <Box className="flex-1 flex items-center">
+            <Typography variant="body2" color="text.secondary" className="max-w-[80%] truncate">
               {assetName}
             </Typography>
           </Box>
@@ -139,7 +138,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           </IconButton>
         </Box>
       )}
-      <Box sx={{ flex: 1, position: 'relative' }}>
+      <Box className="flex-1 relative">
         <iframe
           src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
           width="100%"

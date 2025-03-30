@@ -58,12 +58,12 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
           </ListItemButton>
         </ListItem>
         
-        {hasSublocations && (
-          <Collapse in={selectedLocation?.id === location.id}>
+        {hasSublocations && selectedLocation?.id === location.id && (
+          <div className="pl-4">
             <List disablePadding>
               {sublocations.map((subloc) => renderLocationItem(subloc, depth + 1))}
             </List>
-          </Collapse>
+          </div>
         )}
       </React.Fragment>
     );
