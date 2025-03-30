@@ -1,56 +1,58 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, IconButton, Box } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  Box, 
+  IconButton, 
+  Typography 
+} from './ui';
+import { CloseIcon } from '../assets/icons';
 import PDFViewer from './PDFViewer';
 
 interface PDFViewerDialogProps {
-  assetName: string;
   open: boolean;
   onClose: () => void;
+  assetName: string;
 }
 
-const PDFViewerDialog: React.FC<PDFViewerDialogProps> = ({ 
-  assetName,
-  open,
-  onClose
+export const PDFViewerDialog: React.FC<PDFViewerDialogProps> = ({ 
+  open, 
+  onClose, 
+  assetName 
 }) => {
   return (
-    <Dialog
-      open={open}
+    <Dialog 
+      open={open} 
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      PaperProps={{
-        sx: { 
-          height: '90vh',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column'
-        }
-      }}
+      className="rounded overflow-hidden"
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {assetName}
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{ color: (theme) => theme.palette.grey[500] }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers sx={{ p: 0, flex: 1, display: 'flex' }}>
-        <Box sx={{ width: '100%', height: '100%' }}>
-          {open && (  // Only render PDFViewer when dialog is open to avoid unnecessary loading
-            <PDFViewer 
-              assetName={assetName} 
-              width="100%" 
-              height="100%" 
-              allowDownload={true}
-              showTopBar={false}
-            />
-          )}
+      <DialogTitle className="border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-100 dark:bg-gray-900">
+        <Box className="flex justify-between items-center">
+          <Typography variant="subtitle1" component="div">
+            {assetName}
+          </Typography>
+          <IconButton 
+            onClick={onClose}
+            size="small"
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
         </Box>
+      </DialogTitle>
+      <DialogContent className="p-0 h-[75vh]">
+        {assetName && (
+          <PDFViewer 
+            assetName={assetName} 
+            height="100%" 
+            width="100%" 
+            allowDownload={true}
+            showTopBar={false}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

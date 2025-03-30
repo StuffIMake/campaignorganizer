@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { Howl } from 'howler';
 import { AssetManager } from '../services/assetManager';
 
+// Import and export the types
+export * from './types';
+
 // Get data from IndexedDB asynchronously, with empty arrays as fallbacks
 const getLocationsData = async () => {
   const customLocations = await AssetManager.getDataObject<CustomLocation[]>('locations.json');

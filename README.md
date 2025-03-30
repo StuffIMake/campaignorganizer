@@ -1,82 +1,83 @@
-# Pen & Paper RPG Companion Tool
+# Campaign Organizer
 
-A digital companion for tabletop RPG sessions featuring interactive maps, ambient audio management, character management, and location tracking.
+A sleek, modern web application for tabletop RPG game masters to organize campaign information, including locations, characters, and combats.
 
 ## Features
 
-- **Interactive Maps**: Pan, zoom, and navigate between connected locations
-- **Location Management**: Create a hierarchy of locations and sublocations
-- **NPC Management**: Create and assign NPCs and merchants to specific locations
-- **Audio Integration**: Set background music and entry sounds for each location
-- **Asset Management**: Import and manage your own images and audio files
+- **Modern UI**: Beautiful, responsive interfaces with subtle animations and transitions
+- **Dark Mode Support**: Full dark mode support with proper color theming
+- **Locations Management**: Create, edit, and organize locations with connections and descriptions
+- **Characters Management**: Manage NPCs, enemies, merchants, and player characters
+- **Inventory System**: Track items, equipment, and loot
+- **Combat Tracker**: Organize combat encounters with initiative tracking
+- **Local Storage**: All data is stored locally in your browser using IndexedDB
+- **Export/Import**: Export your campaign data as a zip file for backup or sharing
 
-## Tech Stack
+## Design System
 
-- **Frontend**: React + TypeScript
-- **State Management**: Zustand
-- **Audio**: Howler.js
-- **UI**: Material-UI (MUI)
-- **Build**: Vite
-- **Map Interaction**: react-zoom-pan-pinch
+The Campaign Organizer uses a custom modern design system with a focus on sleek, clean interfaces with subtle animations and transitions.
 
-## Installation
+### Components
 
-```bash
-git clone https://github.com/StuffIMake/campaignorganizer.git
-cd campaignorganizer
-npm install
-npm run dev
-```
+- **Navigation**: Responsive navigation with smooth transitions and intelligent scrolling behavior
+- **Card**: Versatile card component with hover effects, variants, and animations
+- **Button**: Modern buttons with multiple variants, loading states, and interactions
+- **Dialog**: Modal dialogs with smooth animations and backdrop effects
+- **Alert**: Notification component with multiple severity levels and variants
+- **Tooltip**: Accurate tooltip positioning with smooth animations
+- **Chip**: Tag-like components for displaying compact information
+- **Box**: Responsive layout component with flexible styling options
+- **AppLoader**: Animated loading indicator for asynchronous operations
 
-## Data Structure
+### Animations
 
-### Locations
-Locations are defined hierarchically with support for sublocations:
+The application includes custom animations for a polished user experience:
 
-```json
-{
-  "id": "forest_clearing",
-  "name": "Ancient Forest Clearing",
-  "description": "A mystical forest clearing...",
-  "backgroundMusic": "forest_ambience.mp3",
-  "entrySound": "forest_entry.mp3",
-  "coordinates": [45, 32],
-  "connectedLocations": ["forest_path", "cave_entrance"],
-  "sublocations": [...]
-}
-```
+- Smooth page transitions
+- Loading states with subtle animations
+- Hover interactions on interactive elements
+- Modern form interactions
+- Dialog entry/exit animations
+- Alert notifications with smooth entrance effects
 
-### Characters/NPCs
-Characters (NPCs and merchants) can be assigned to specific locations:
+### Dark Mode
 
-```json
-{
-  "id": "village_blacksmith",
-  "name": "Grimforge the Blacksmith",
-  "description": "A burly dwarf with a flowing red beard...",
-  "type": "merchant",
-  "locationId": "village_square",
-}
-```
+The application supports full dark mode with carefully designed color schemes for both light and dark themes. The system respects user system preferences for theme selection.
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Open your browser to `http://localhost:3000`
 
 ## Usage
 
-### Map View
-- Navigate the interactive map with pan and zoom controls
-- View locations and their connections
-- Click on locations to view details and assigned NPCs
-- Toggle edit mode to add, move, or modify locations
-- View NPCs assigned to the current location and its sublocations
+### Locations
 
-### Character View
-- Create and manage NPCs and merchants
-- Assign characters to specific locations
+Create and manage locations for your campaign world. Connect locations to establish geographic relationships. Add rich descriptions using Markdown.
 
-### Asset Management
-- Import custom images for maps
-- Import audio files for ambience and sound effects
-- Export/import your campaign data for backup or sharing
+### Characters
+
+Track NPCs, enemies, merchants, and player characters. Manage their stats, descriptions, and inventories. Assign characters to locations.
+
+### Combat
+
+Set up combat encounters with an initiative tracker. Add characters to combat and track their health and status effects.
+
+## Technologies Used
+
+- React
+- TypeScript
+- Tailwind CSS
+- React Router
+- IndexedDB (for local storage)
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Designed and built for tabletop RPG enthusiasts
+- Inspired by the needs of game masters running complex campaigns

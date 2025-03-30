@@ -1,13 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Paper, 
-  TextField, 
-  CircularProgress,
-  Alert
-} from '@mui/material';
 import { AssetManager } from '../services/assetManager';
 import { useStore } from '../store';
 
@@ -185,69 +176,64 @@ const JSONEditor: React.FC<JSONEditorProps> = ({ fileName, onSave }) => {
   
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
   
   return (
-    <Paper elevation={2} sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-      <Typography variant="h6" component="h2" gutterBottom>
+    <div className="bg-slate-800 p-4 rounded-lg shadow">
+      <h2 className="text-lg font-medium text-white mb-3">
         Editing {fileName}
-      </Typography>
+      </h2>
       
       {error && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <div className="bg-amber-900/50 text-amber-200 p-3 rounded-md mb-4 border border-amber-700/50">
+          <p className="text-sm">{error}</p>
+        </div>
       )}
       
-      <TextField
-        label="JSON Content"
-        fullWidth
-        multiline
-        rows={15}
-        value={jsonContent}
-        onChange={handleContentChange}
-        variant="outlined"
-        sx={{ 
-          mb: 2,
-          fontFamily: 'monospace',
-          '& .MuiInputBase-input': {
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }
-        }}
-        error={saveMessage?.type === 'error'}
-        helperText={saveMessage?.type === 'error' ? saveMessage.message : ''}
-      />
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-slate-300 mb-1">JSON Content</label>
+        <textarea
+          className={`w-full h-[300px] px-3 py-2 bg-slate-900 border rounded font-mono text-sm ${
+            saveMessage?.type === 'error' ? 'border-red-500' : 'border-slate-600'
+          } text-white`}
+          value={jsonContent}
+          onChange={handleContentChange}
+        />
+        {saveMessage?.type === 'error' && (
+          <p className="text-red-500 text-xs mt-1">{saveMessage.message}</p>
+        )}
+      </div>
       
-      <Box display="flex" justifyContent="flex-end" gap={1}>
-        <Button 
-          variant="outlined" 
+      <div className="flex justify-end gap-3">
+        <button 
+          className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleFormat}
           disabled={saving}
         >
           Format
-        </Button>
+        </button>
         
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <button 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSave}
           disabled={saving || !hasChanges}
         >
-          {saving ? <CircularProgress size={24} /> : 'Save'}
-        </Button>
-      </Box>
+          {saving ? (
+            <div className="animate-spin h-5 w-5 border-2 border-t-transparent border-white rounded-full mx-auto"></div>
+          ) : 'Save'}
+        </button>
+      </div>
       
       {saveMessage?.type === 'success' && (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          {saveMessage.message}
-        </Alert>
+        <div className="bg-green-900/50 text-green-200 p-3 rounded-md mt-4 border border-green-700/50">
+          <p className="text-sm">{saveMessage.message}</p>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
 

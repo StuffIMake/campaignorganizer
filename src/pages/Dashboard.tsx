@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Button, Dialog, DialogContent, Divider, Paper } from '@mui/material';
 import { useStore } from '../store';
 import { AssetDropZone } from '../components/AssetDropZone';
 import { AssetManager } from '../services/assetManager';
 import MarkdownContent from '../components/MarkdownContent';
+import { Button, Dialog } from '../components/ui';
 
 export const Dashboard: React.FC = () => {
   const { locations, characters, combats } = useStore();
@@ -59,110 +59,107 @@ function example() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
+    <div className="p-6 max-w-[var(--content-width-xl)] mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold font-[var(--font-display)] text-transparent bg-clip-text bg-gradient-to-r from-primary-300 to-primary-500">
           Campaign Dashboard
-        </Typography>
+        </h1>
         <Button 
-          variant="contained" 
-          color="primary"
+          variant="primary"
           onClick={() => setIsAssetManagerOpen(true)}
         >
           Manage Assets
         </Button>
-      </Box>
+      </div>
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <Grid item xs={12} sm={4} key={stat.label}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {stat.label}
-                </Typography>
-                <Typography variant="h3" color="primary">
-                  {stat.value}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div key={stat.label} className="glass-effect rounded-[var(--radius-lg)] shadow-lg p-5">
+            <h2 className="text-base font-medium text-slate-300 mb-2">
+              {stat.label}
+            </h2>
+            <p className="text-3xl font-bold text-primary-400">
+              {stat.value}
+            </p>
+          </div>
         ))}
-      </Grid>
+      </div>
 
-      <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Locations
-              </Typography>
-              {locations.slice(0, 5).map((location) => (
-                <Typography key={location.id} variant="body1" sx={{ mb: 1 }}>
-                  {location.name}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <div className="glass-effect rounded-[var(--radius-lg)] shadow-lg p-5">
+          <h2 className="text-xl font-medium text-white mb-4 border-b border-slate-700/50 pb-2">
+            Recent Locations
+          </h2>
+          <div className="space-y-2">
+            {locations.slice(0, 5).map((location) => (
+              <div key={location.id} className="p-2 hover:bg-slate-800/60 rounded-[var(--radius-md)] transition-all">
+                {location.name}
+              </div>
+            ))}
+            {locations.length === 0 && (
+              <p className="text-slate-400 italic p-2">No locations added yet</p>
+            )}
+          </div>
+        </div>
 
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Characters
-              </Typography>
-              {characters.slice(0, 5).map((character) => (
-                <Typography key={character.id} variant="body1" sx={{ mb: 1 }}>
-                  {character.name} - {character.type}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <div className="glass-effect rounded-[var(--radius-lg)] shadow-lg p-5">
+          <h2 className="text-xl font-medium text-white mb-4 border-b border-slate-700/50 pb-2">
+            Recent Characters
+          </h2>
+          <div className="space-y-2">
+            {characters.slice(0, 5).map((character) => (
+              <div key={character.id} className="p-2 hover:bg-slate-800/60 rounded-[var(--radius-md)] transition-all">
+                {character.name} <span className="text-slate-400">- {character.type}</span>
+              </div>
+            ))}
+            {characters.length === 0 && (
+              <p className="text-slate-400 italic p-2">No characters added yet</p>
+            )}
+          </div>
+        </div>
+      </div>
       
-      <Dialog 
-        open={isAssetManagerOpen} 
+      <Dialog
+        open={isAssetManagerOpen}
         onClose={handleAssetManagerClose}
-        maxWidth="md"
-        fullWidth
+        title="Asset Manager"
+        maxWidth="xl"
+        actions={
+          <Button 
+            variant="outline"
+            onClick={handleAssetManagerClose}
+          >
+            Close
+          </Button>
+        }
       >
-        <DialogContent>
-          <AssetDropZone onAssetImport={handleAssetImport} />
-        </DialogContent>
+        <AssetDropZone onAssetImport={handleAssetImport} />
       </Dialog>
 
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="h6" gutterBottom>Preview:</Typography>
-      <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+      <div className="h-px bg-slate-700/50 my-8"></div>
+      <h2 className="text-xl font-medium text-white mb-4">Preview:</h2>
+      <div className="glass-effect p-5 rounded-[var(--radius-lg)] scrollbar-thin shadow-lg">
         <MarkdownContent content={markdownExample} debug={true} />
-      </Paper>
-      <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
-        <Typography variant="subtitle2" gutterBottom>
+      </div>
+      <div className="mt-6 p-5 bg-primary-950/20 backdrop-blur-sm border border-primary-900/30 rounded-[var(--radius-lg)] shadow-lg">
+        <h3 className="text-lg font-medium text-primary-300 mb-3">
           Troubleshooting Markdown Display:
-        </Typography>
-        <Typography variant="body2">
+        </h3>
+        <p className="text-slate-300 mb-3">
           If markdown isn't displaying correctly in the deployed version, please:
-        </Typography>
-        <ul>
+        </p>
+        <ul className="list-disc list-inside text-slate-300 space-y-2 ml-2">
           <li>
-            <Typography variant="body2">
-              Check the browser console for any errors (F12 &gt; Console)
-            </Typography>
+            Check the browser console for any errors (F12 &gt; Console)
           </li>
           <li>
-            <Typography variant="body2">
-              Try refreshing the page with cache clearing (Ctrl+F5 or Cmd+Shift+R)
-            </Typography>
+            Try refreshing the page with cache clearing (Ctrl+F5 or Cmd+Shift+R)
           </li>
           <li>
-            <Typography variant="body2">
-              Temporarily disable any browser extensions that might interfere
-            </Typography>
+            Temporarily disable any browser extensions that might interfere
           </li>
         </ul>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }; 

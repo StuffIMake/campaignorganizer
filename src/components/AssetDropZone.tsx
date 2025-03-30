@@ -1,51 +1,32 @@
 import React, { useState, useRef, DragEvent, useEffect } from 'react';
 import { 
-  Box, 
-  Typography, 
-  Button, 
-  Paper, 
-  Alert, 
-  AlertTitle, 
-  IconButton, 
-  Tooltip, 
-  CircularProgress,
-  Tab,
-  Tabs,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField
-} from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloseIcon from '@mui/icons-material/Close';
-import HelpIcon from '@mui/icons-material/Help';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import DownloadIcon from '@mui/icons-material/Download';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
+  CloudUploadIcon,
+  DeleteIcon,
+  CloseIcon,
+  HelpIcon, 
+  ExpandMoreIcon,
+  DownloadIcon,
+  UploadIcon,
+  EditIcon,
+  AddIcon
+} from '../assets/icons';
 import { AssetManager, AssetType } from '../services/assetManager';
 import { useStore } from '../store';
 import JSONEditor from './JSONEditor';
+import { Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from './ui';
 
 interface AssetDropZoneProps {
   onAssetImport?: () => void;
   isFullPage?: boolean;
+  dialogOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const AssetDropZone: React.FC<AssetDropZoneProps> = ({ 
   onAssetImport,
-  isFullPage = false 
+  isFullPage = false,
+  dialogOpen = false,
+  onClose
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -486,157 +467,138 @@ Example locations.json:
   const renderAssetList = (type: AssetType, assets: string[]) => {
     if (isLoadingAssets) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-          <CircularProgress size={30} />
-        </Box>
+        <div className="flex justify-center p-2">
+          <div className="animate-spin h-6 w-6 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        </div>
       );
     }
     
     if (assets.length === 0) {
       return (
-        <Typography variant="body2" sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+        <p className="p-2 text-center text-gray-400 dark:text-gray-500">
           No {type} assets found. Add some using the "Add {type}" button.
-        </Typography>
+        </p>
       );
     }
     
     return (
-      <List dense>
+      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
         {assets.map((asset: string) => {
           const isPdf = type === 'images' && asset.toLowerCase().endsWith('.pdf');
           const isJson = type === 'data' && asset.toLowerCase().endsWith('.json');
           return (
-            <ListItem key={asset}>
-              <ListItemText 
-                primary={asset} 
-                secondary={
-                  type === 'data' ? 'JSON Data' : 
+            <li key={asset} className="flex justify-between items-center py-2 px-1">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{asset}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {type === 'data' ? 'JSON Data' : 
                   isPdf ? 'PDF Document' :
-                  `${type.charAt(0).toUpperCase() + type.slice(1)} File`
-                } 
-              />
-              <ListItemSecondaryAction>
+                  `${type.charAt(0).toUpperCase() + type.slice(1)} File`}
+                </p>
+              </div>
+              <div className="flex space-x-1">
                 {isJson && (
-                  <IconButton edge="end" onClick={() => handleEditJson(asset)} sx={{ mr: 1 }}>
-                    <EditIcon />
-                  </IconButton>
+                  <button 
+                    onClick={() => handleEditJson(asset)}
+                    className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <EditIcon size={18} />
+                  </button>
                 )}
-                <IconButton edge="end" onClick={() => handleDeleteAsset(type, asset)}>
-                  <DeleteIcon />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
+                <button 
+                  onClick={() => handleDeleteAsset(type, asset)}
+                  className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  <DeleteIcon size={18} />
+                </button>
+              </div>
+            </li>
           );
         })}
-      </List>
+      </ul>
     );
   };
   
   // If still checking for assets, show a loading indicator
   if (isCheckingAssets) {
     return (
-      <Paper 
-        elevation={3}
-        sx={{
-          p: 2,
-          backgroundColor: 'rgba(45, 45, 45, 0.9)',
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          width: isFullPage ? '100%' : 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 200
-        }}
+      <div 
+        className="p-4 bg-gray-800 dark:bg-gray-800 rounded-lg shadow-md relative w-full flex flex-col items-center justify-center min-h-[200px]"
       >
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ mt: 2 }}>
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <p className="mt-4 text-gray-200">
           Checking for stored assets...
-        </Typography>
-      </Paper>
+        </p>
+      </div>
     );
   }
   
-  return (
-    <>
-      <Paper 
-        elevation={3}
-        sx={{
-          p: 2,
-          backgroundColor: 'rgba(45, 45, 45, 0.9)',
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          width: isFullPage ? '100%' : 'auto',
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
+  // Render content inside a Dialog if dialogOpen is true
+  const content = (
+    <div 
+      className={`asset-drop-zone ${isDragging ? 'dragging' : ''} ${isFullPage ? 'h-full' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="p-4 bg-gray-800 dark:bg-gray-800 rounded-lg shadow-md relative w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">
             Asset Manager
-          </Typography>
+          </h2>
           
-          <Tooltip title={helpText} arrow placement="left">
-            <IconButton size="small">
-              <HelpIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
+          <button
+            title={helpText}
+            className="text-gray-400 hover:text-gray-300 p-1"
+          >
+            <HelpIcon size={20} />
+          </button>
+        </div>
         
         {/* Import section */}
-        <Accordion
-          defaultExpanded={!hasStoredAssets}
-          sx={{ mb: 2, backgroundColor: 'rgba(60, 60, 60, 0.7)' }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">Import ZIP File</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box 
-              sx={{
-                border: '2px dashed',
-                borderColor: isDragging ? 'primary.main' : 'grey.500',
-                borderRadius: 1,
-                p: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                backgroundColor: isDragging ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
-                transition: 'all 0.3s ease',
-                position: 'relative',
-              }}
+        <div className="mb-4 bg-gray-700 dark:bg-gray-700 rounded-lg">
+          <div className="flex justify-between items-center p-3 cursor-pointer">
+            <h3 className="text-base font-medium text-white">Import ZIP File</h3>
+            <ExpandMoreIcon size={20} className="text-gray-400" />
+          </div>
+          <div className="p-4">
+            <div 
+              className={`
+                border-2 border-dashed rounded-lg p-6 
+                flex flex-col items-center justify-center 
+                cursor-pointer transition-colors duration-200
+                ${isDragging ? 'border-blue-500 bg-blue-900 bg-opacity-10' : 'border-gray-500'} 
+              `}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
               {isProcessing ? (
-                <CircularProgress size={30} sx={{ my: 2 }} />
+                <div className="my-4 animate-spin h-6 w-6 border-2 border-blue-500 rounded-full border-t-transparent"></div>
               ) : (
                 <>
-                  <CloudUploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body1" gutterBottom>
+                  <CloudUploadIcon className="text-gray-400 h-10 w-10 mb-2" />
+                  <p className="text-base text-white mb-1">
                     Drag & Drop a ZIP file here, or click to select
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
+                  </p>
+                  <p className="text-sm text-gray-400">
                     Your ZIP should contain audio/, images/, and data/ folders
-                  </Typography>
+                  </p>
                 </>
               )}
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                style={{ display: 'none' }}
+                className="hidden"
                 accept=".zip"
               />
-            </Box>
+            </div>
             
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+            <div className="mt-4 flex justify-between">
               <Button 
-                variant="outlined" 
-                color="warning" 
+                variant="outline"
                 startIcon={<DeleteIcon />}
                 onClick={handleClearAssets}
                 disabled={isProcessing || !hasStoredAssets}
@@ -646,168 +608,164 @@ Example locations.json:
               
               {!hasStoredAssets && (
                 <Button 
-                  variant="outlined" 
-                  color="primary"
+                  variant="outline"
                   onClick={handleCreateEmptyData}
                   disabled={isProcessing}
                 >
                   Create Empty Structure
                 </Button>
               )}
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+            </div>
+          </div>
+        </div>
         
         {/* Export section */}
-        <Accordion
-          sx={{ mb: 2, backgroundColor: 'rgba(60, 60, 60, 0.7)' }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">Export Campaign</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" paragraph>
-                Export your entire campaign as a ZIP file to backup your work or share it with others.
-              </Typography>
+        <div className="mb-4 bg-gray-700 dark:bg-gray-700 rounded-lg">
+          <div className="flex justify-between items-center p-3 cursor-pointer">
+            <h3 className="text-base font-medium text-white">Export Campaign</h3>
+            <ExpandMoreIcon size={20} className="text-gray-400" />
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-gray-300 mb-4">
+              Export your entire campaign as a ZIP file to backup your work or share it with others.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <Button 
+                variant="primary"
+                fullWidth
+                startIcon={<DownloadIcon />}
+                onClick={handleExportZip}
+                disabled={isSaving || !hasStoredAssets}
+              >
+                {isSaving ? 'Preparing ZIP...' : 'Export Campaign ZIP'}
+              </Button>
               
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    fullWidth
-                    startIcon={<DownloadIcon />}
-                    onClick={handleExportZip}
-                    disabled={isSaving || !hasStoredAssets}
-                  >
-                    {isSaving ? 'Preparing ZIP...' : 'Export Campaign ZIP'}
-                  </Button>
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Button 
-                    variant="outlined" 
-                    color="primary" 
-                    fullWidth
-                    startIcon={<DownloadIcon />}
-                    onClick={handleDownloadZip}
-                    disabled={!exportUrl}
-                  >
-                    Download ZIP
-                  </Button>
-                </Grid>
-              </Grid>
-            </Box>
+              <Button 
+                variant="outline"
+                fullWidth
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadZip}
+                disabled={!exportUrl}
+              >
+                Download ZIP
+              </Button>
+            </div>
             
             <Button
-              variant="outlined"
-              color="success"
+              variant="outline"
               fullWidth
               onClick={handleSaveData}
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Save Current Campaign State'}
             </Button>
-            
-          </AccordionDetails>
-        </Accordion>
+          </div>
+        </div>
         
         {/* Individual asset management */}
-        <Accordion
-          sx={{ backgroundColor: 'rgba(60, 60, 60, 0.7)' }}
-          defaultExpanded={hasStoredAssets}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">Manage Individual Assets</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ width: '100%' }}>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Tabs value={tabValue} onChange={handleTabChange}>
-                  <Tab label="Audio" />
-                  <Tab label="Images" />
-                  <Tab label="Data" />
-                </Tabs>
-              </Box>
-              
-              <Box sx={{ p: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<UploadFileIcon />}
-                    onClick={() => handleAddAssetClick(tabValue === 0 ? 'audio' : tabValue === 1 ? 'images' : 'data')}
-                  >
-                    Add {tabValue === 0 ? 'Audio' : tabValue === 1 ? 'Image' : 'Data'} File
-                  </Button>
-                  
-                  {tabValue === 2 && (
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      startIcon={<AddIcon />}
-                      onClick={handleCreateJson}
-                    >
-                      Create New JSON
-                    </Button>
-                  )}
-                </Box>
+        <div className="bg-gray-700 dark:bg-gray-700 rounded-lg">
+          <div className="flex justify-between items-center p-3 cursor-pointer">
+            <h3 className="text-base font-medium text-white">Manage Individual Assets</h3>
+            <ExpandMoreIcon size={20} className="text-gray-400" />
+          </div>
+          <div className="p-4">
+            <div className="border-b border-gray-600 mb-4">
+              <div className="flex space-x-4">
+                <button 
+                  className={`pb-2 px-1 text-sm font-medium border-b-2 ${tabValue === 0 ? 'text-blue-400 border-blue-400' : 'text-gray-400 border-transparent'}`}
+                  onClick={(e) => handleTabChange(e, 0)}
+                >
+                  Audio
+                </button>
+                <button 
+                  className={`pb-2 px-1 text-sm font-medium border-b-2 ${tabValue === 1 ? 'text-blue-400 border-blue-400' : 'text-gray-400 border-transparent'}`}
+                  onClick={(e) => handleTabChange(e, 1)}
+                >
+                  Images
+                </button>
+                <button 
+                  className={`pb-2 px-1 text-sm font-medium border-b-2 ${tabValue === 2 ? 'text-blue-400 border-blue-400' : 'text-gray-400 border-transparent'}`}
+                  onClick={(e) => handleTabChange(e, 2)}
+                >
+                  Data
+                </button>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex justify-between mb-2">
+                <Button
+                  variant="outline"
+                  size="small"
+                  startIcon={<UploadIcon size={16} />}
+                  onClick={() => handleAddAssetClick(tabValue === 0 ? 'audio' : tabValue === 1 ? 'images' : 'data')}
+                >
+                  Add {tabValue === 0 ? 'Audio' : tabValue === 1 ? 'Image' : 'Data'} File
+                </Button>
                 
-                {/* Tab panels */}
-                <Box role="tabpanel" hidden={tabValue !== 0}>
-                  {tabValue === 0 && renderAssetList('audio', audioAssets)}
-                </Box>
-                <Box role="tabpanel" hidden={tabValue !== 1}>
-                  {tabValue === 1 && renderAssetList('images', imageAssets)}
-                </Box>
-                <Box role="tabpanel" hidden={tabValue !== 2}>
-                  {tabValue === 2 && renderAssetList('data', dataAssets)}
-                </Box>
-              </Box>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+                {tabValue === 2 && (
+                  <Button
+                    variant="outline"
+                    size="small"
+                    startIcon={<AddIcon size={16} />}
+                    onClick={handleCreateJson}
+                  >
+                    Create New JSON
+                  </Button>
+                )}
+              </div>
+              
+              {/* Tab panels */}
+              <div className={tabValue !== 0 ? 'hidden' : ''}>
+                {tabValue === 0 && renderAssetList('audio', audioAssets)}
+              </div>
+              <div className={tabValue !== 1 ? 'hidden' : ''}>
+                {tabValue === 1 && renderAssetList('images', imageAssets)}
+              </div>
+              <div className={tabValue !== 2 ? 'hidden' : ''}>
+                {tabValue === 2 && renderAssetList('data', dataAssets)}
+              </div>
+            </div>
+          </div>
+        </div>
         
         {/* Result message */}
         {result && (
           <Alert 
-            severity={result.success ? 'success' : 'error'} 
-            sx={{ mt: 2 }}
-            action={
-              <IconButton size="small" onClick={handleCloseAlert}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            }
+            severity={result.success ? 'success' : 'error'}
+            title={result.success ? 'Success' : 'Error'}
+            onClose={handleCloseAlert}
+            className="mt-4"
           >
-            <AlertTitle>{result.success ? 'Success' : 'Error'}</AlertTitle>
             {result.message}
           </Alert>
         )}
-      </Paper>
+      </div>
       
       {/* Dialog for adding individual assets */}
-      <Dialog open={isAddAssetDialogOpen} onClose={() => setIsAddAssetDialogOpen(false)}>
-        <DialogTitle>
-          Add {currentAssetType === 'audio' ? 'Audio' : currentAssetType === 'images' ? 'Image or PDF' : 'Data'} File
-        </DialogTitle>
+      <Dialog
+        open={isAddAssetDialogOpen}
+        onClose={() => setIsAddAssetDialogOpen(false)}
+      >
+        <DialogTitle>Add Asset</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <p className="text-sm text-gray-400 mb-4">
             {currentAssetType === 'audio' && 'Select an audio file (MP3, WAV, OGG)'}
             {currentAssetType === 'images' && 'Select an image file (PNG, JPG, GIF) or a PDF document'}
             {currentAssetType === 'data' && 'Select a JSON data file'}
-          </Typography>
+          </p>
           
           <Button
-            variant="contained"
-            component="label"
+            variant="primary"
             fullWidth
+            onClick={() => singleFileInputRef.current?.click()}
           >
             Choose File
             <input
               type="file"
               ref={singleFileInputRef}
-              hidden
+              className="hidden"
               onChange={handleSingleFileSelect}
               accept={
                 currentAssetType === 'audio' ? 'audio/*' :
@@ -823,45 +781,40 @@ Example locations.json:
       </Dialog>
       
       {/* Dialog for creating a new JSON file */}
-      <Dialog open={isCreateJsonOpen} onClose={() => setIsCreateJsonOpen(false)}>
-        <DialogTitle>Create New JSON File</DialogTitle>
+      <Dialog
+        open={isCreateJsonOpen}
+        onClose={() => setIsCreateJsonOpen(false)}
+      >
+        <DialogTitle>Create JSON File</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <p className="text-sm text-gray-400 mb-4">
             Enter a filename for the new JSON file. The .json extension will be added automatically if needed.
-          </Typography>
+          </p>
           
           <TextField
-            autoFocus
-            margin="dense"
             label="Filename"
-            fullWidth
-            variant="outlined"
             value={newJsonFileName}
             onChange={handleNewJsonNameChange}
-            sx={{ mb: 2 }}
+            fullWidth
             placeholder="e.g., mydata.json"
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsCreateJsonOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleCreateNewJsonFile} 
-            variant="contained" 
-            color="primary"
-            disabled={!newJsonFileName}
-          >
+          <Button onClick={handleCreateNewJsonFile} disabled={!newJsonFileName || isSaving}>
             Create
           </Button>
         </DialogActions>
       </Dialog>
       
       {/* JSON Editor Dialog */}
-      <Dialog 
-        open={isJsonEditorOpen} 
+      <Dialog
+        open={isJsonEditorOpen}
         onClose={handleCloseJsonEditor}
+        maxWidth="xl"
         fullWidth
-        maxWidth="md"
       >
+        <DialogTitle>Editing {jsonFileToEdit}</DialogTitle>
         <DialogContent>
           <JSONEditor 
             fileName={jsonFileToEdit} 
@@ -869,9 +822,32 @@ Example locations.json:
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseJsonEditor}>Close</Button>
+          <Button onClick={handleCloseJsonEditor}>Cancel</Button>
         </DialogActions>
       </Dialog>
-    </>
+    </div>
   );
+
+  // Return content wrapped in Dialog if dialogOpen is true
+  if (dialogOpen && onClose) {
+    return (
+      <Dialog
+        open={dialogOpen}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Asset Manager</DialogTitle>
+        <DialogContent>
+          {content}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  // Return content directly if not in dialog mode
+  return content;
 }; 

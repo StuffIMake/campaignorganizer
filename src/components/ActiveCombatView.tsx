@@ -1,47 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Button, 
-  IconButton, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemIcon,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Card,
-  CardContent,
-  Divider,
-  Grid,
-  Chip,
-  Avatar,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Badge,
-  Autocomplete
-} from '@mui/material';
-import { 
-  ArrowBack as ArrowBackIcon,
-  SportsKabaddi as SportsKabaddiIcon,
-  Person as PersonIcon,
-  AddCircle as AddCircleIcon,
-  ArrowForward as ArrowForwardIcon,
-  Close as CloseIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Store as StoreIcon,
-  Star
-} from '@mui/icons-material';
+  AddIcon,
+  DeleteIcon,
+  EditIcon,
+  SaveIcon,
+  CloseIcon,
+  HelpIcon
+} from '../assets/icons';
 import { useStore } from '../store';
-import { Combat, Character, Item } from '../store';
+import { Character, Item, Combat } from '../store';
 import MarkdownContent from './MarkdownContent';
+import { Button, Dialog, TextField } from './ui';
 import AssetViewer from './AssetViewer';
 import PDFViewer from './PDFViewer';
 

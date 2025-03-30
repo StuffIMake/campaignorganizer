@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress, Paper, IconButton } from '@mui/material';
 import { AssetManager } from '../services/assetManager';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
 interface PDFViewerProps {
   assetName: string;
   width?: string | number;

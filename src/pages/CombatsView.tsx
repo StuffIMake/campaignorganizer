@@ -1,44 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Card,
+import { useStore } from '../store';
+import { Combat, Character, Item, CustomLocation } from '../store';
+import { 
+  AddIcon, 
+  SearchIcon, 
+  ClearIcon, 
+  EditIcon, 
+  DeleteIcon,
+  SaveIcon,
+  Star,
+  RemoveIcon
+} from '../assets/icons';
+import { 
+  Box, 
+  Button, 
+  Card, 
   CardContent,
-  Dialog,
+  CardActions,
+  Chip, 
+  CircularProgress,
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
   DialogActions,
-  DialogContent,
-  DialogTitle,
+  Divider,
+  FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
+  InputAdornment,
+  InputLabel,
   List,
   ListItem,
-  ListItemSecondaryAction,
   ListItemText,
   MenuItem,
+  Paper,
+  Select,
   TextField,
   Typography,
-  Select,
-  FormControl,
-  InputLabel,
   Autocomplete,
-  Chip,
-  Divider,
   ButtonGroup,
-  InputAdornment,
-  Paper,
-  FormControlLabel,
   Checkbox
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
-import { useStore } from '../store';
-import { Combat, Character, Item } from '../store';
+} from '@components/ui';
+import MarkdownContent from '@components/MarkdownContent';
+import AssetViewer from '@components/AssetViewer';
 import { AssetManager } from '../services/assetManager';
-import { Star } from '@mui/icons-material';
 
 // Interface for enemy instances with count
 interface EnemyInstance {

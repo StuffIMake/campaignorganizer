@@ -27,3 +27,8 @@ dist-ssr
 *.sln
 *.sw?
 .vite/*temp*
+
+Witcher*
+__mocks__
+campaign-data*
+.cursor

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Theme } from '@mui/material';
 // Dynamically import ReactMarkdown to ensure it's included in production builds
 import ReactMarkdown from 'react-markdown';
 // Add remarkGfm for GitHub Flavored Markdown (tables, strikethrough, etc.)
@@ -7,9 +6,10 @@ import remarkGfm from 'remark-gfm';
 
 interface MarkdownContentProps {
   content: string;
-  sx?: any;
+  className?: string;
   debug?: boolean;
   disableParaTags?: boolean;
+  sx?: Record<string, any>;
 }
 
 // Utility function to detect if a string contains markdown
@@ -62,7 +62,13 @@ const SimpleMarkdownRenderer: React.FC<{content: string}> = ({ content }) => {
   );
 };
 
-const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, sx, debug = false, disableParaTags = false }) => {
+const MarkdownContent: React.FC<MarkdownContentProps> = ({ 
+  content, 
+  className = '', 
+  debug = false, 
+  disableParaTags = false,
+  sx = {}
+}) => {
   const [error, setError] = useState<boolean>(false);
   const [markdownDetected, setMarkdownDetected] = useState<boolean>(false);
   const [useSimpleRenderer, setUseSimpleRenderer] = useState<boolean>(false);
@@ -79,6 +85,40 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, sx, debug = 
     setMarkdownDetected(containsMarkdown(content));
   }, [content]);
 
+  // Convert sx props to inline styles
+  const inlineStyle: React.CSSProperties = {};
+  
+  // Handle common sx properties
+  if (sx.width) inlineStyle.width = sx.width;
+  if (sx.minWidth) inlineStyle.minWidth = sx.minWidth;
+  if (sx.maxWidth) inlineStyle.maxWidth = sx.maxWidth;
+  if (sx.height) inlineStyle.height = sx.height;
+  if (sx.minHeight) inlineStyle.minHeight = sx.minHeight;
+  if (sx.maxHeight) inlineStyle.maxHeight = sx.maxHeight;
+  if (sx.mt) inlineStyle.marginTop = `${sx.mt * 0.25}rem`;
+  if (sx.mb) inlineStyle.marginBottom = `${sx.mb * 0.25}rem`;
+  if (sx.ml) inlineStyle.marginLeft = `${sx.ml * 0.25}rem`;
+  if (sx.mr) inlineStyle.marginRight = `${sx.mr * 0.25}rem`;
+  if (sx.mx) inlineStyle.marginLeft = inlineStyle.marginRight = `${sx.mx * 0.25}rem`;
+  if (sx.my) inlineStyle.marginTop = inlineStyle.marginBottom = `${sx.my * 0.25}rem`;
+  if (sx.m) inlineStyle.margin = `${sx.m * 0.25}rem`;
+  if (sx.p) inlineStyle.padding = `${sx.p * 0.25}rem`;
+  if (sx.pt) inlineStyle.paddingTop = `${sx.pt * 0.25}rem`;
+  if (sx.pb) inlineStyle.paddingBottom = `${sx.pb * 0.25}rem`;
+  if (sx.pl) inlineStyle.paddingLeft = `${sx.pl * 0.25}rem`;
+  if (sx.pr) inlineStyle.paddingRight = `${sx.pr * 0.25}rem`;
+  if (sx.px) inlineStyle.paddingLeft = inlineStyle.paddingRight = `${sx.px * 0.25}rem`;
+  if (sx.py) inlineStyle.paddingTop = inlineStyle.paddingBottom = `${sx.py * 0.25}rem`;
+  if (sx.fontSize) inlineStyle.fontSize = sx.fontSize;
+  if (sx.fontWeight) inlineStyle.fontWeight = sx.fontWeight;
+  if (sx.lineHeight) inlineStyle.lineHeight = sx.lineHeight;
+  if (sx.color) inlineStyle.color = sx.color;
+  if (sx.textAlign) inlineStyle.textAlign = sx.textAlign;
+  if (sx.display) inlineStyle.display = sx.display;
+  if (sx.overflow) inlineStyle.overflow = sx.overflow;
+  if (sx.WebkitLineClamp) inlineStyle.WebkitLineClamp = sx.WebkitLineClamp;
+  if (sx.WebkitBoxOrient) inlineStyle.WebkitBoxOrient = sx.WebkitBoxOrient;
+
   // Add debugging info if requested
   if (debug) {
     console.log('MarkdownContent debug:', {
@@ -93,18 +133,18 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, sx, debug = 
   // Use our simple renderer if ReactMarkdown is unavailable
   if (useSimpleRenderer) {
     return (
-      <Box sx={sx}>
+      <div className={className} style={inlineStyle}>
         <SimpleMarkdownRenderer content={content} />
-      </Box>
+      </div>
     );
   }
 
   if (error) {
     // Fallback to plain text with line breaks if the markdown component fails
     return (
-      <Typography sx={{ whiteSpace: 'pre-wrap', ...sx }}>
+      <p className={`whitespace-pre-wrap ${className}`} style={inlineStyle}>
         {content}
-      </Typography>
+      </p>
     );
   }
 
@@ -113,98 +153,55 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, sx, debug = 
   if (disableParaTags) {
     // Just render the content as plain text with minimal formatting
     return (
-      <span style={{ whiteSpace: 'normal' }}>
+      <span className="whitespace-normal" style={inlineStyle}>
         {content.replace(/\n/g, ' ').replace(/\s+/g, ' ')}
       </span>
     );
   }
 
+  // Process custom styles for nested elements
+  const customStyles = { ...inlineStyle };
+  // Remove processed nested styles to avoid conflicts
+  const nestedSelectors = ['& h1', '& h2', '& h3', '& h4', '& h5', '& h6', '& p', '& ul', '& ol', '& li', '& table', '& th', '& td'];
+  
+  for (const selector of nestedSelectors) {
+    if (sx[selector as keyof typeof sx]) {
+      delete (customStyles as any)[selector];
+    }
+  }
+
   // Safely render markdown with a try-catch
   try {
     return (
-      <Box 
-        sx={{
-          '& h1, & h2, & h3, & h4, & h5, & h6': {
-            fontWeight: 'bold',
-            mt: 2,
-            mb: 1,
-          },
-          '& h1': { fontSize: '1.8rem' },
-          '& h2': { fontSize: '1.6rem' },
-          '& h3': { fontSize: '1.4rem' },
-          '& h4': { fontSize: '1.2rem' },
-          '& h5': { fontSize: '1.1rem' },
-          '& h6': { fontSize: '1rem' },
-          '& p': { 
-            mb: 1.5,
-            lineHeight: 1.6,
-          },
-          '& ul, & ol': { 
-            pl: 3,
-            mb: 1.5,
-          },
-          '& li': {
-            mb: 0.5,
-          },
-          '& a': {
-            color: (theme: Theme) => theme.palette.primary.main,
-            textDecoration: 'none',
-            '&:hover': {
-              textDecoration: 'underline',
-            },
-          },
-          '& blockquote': {
-            borderLeft: '4px solid',
-            borderColor: 'grey.300',
-            pl: 2,
-            py: 1,
-            my: 2,
-            bgcolor: 'grey.50',
-            fontStyle: 'italic',
-          },
-          '& code': {
-            fontFamily: 'monospace',
-            bgcolor: 'grey.100',
-            p: 0.5,
-            borderRadius: 1,
-          },
-          '& pre': {
-            fontFamily: 'monospace',
-            bgcolor: 'grey.900',
-            color: 'white',
-            p: 2,
-            borderRadius: 1,
-            overflow: 'auto',
-          },
-          '& table': {
-            borderCollapse: 'collapse',
-            width: '100%',
-            mb: 2,
-          },
-          '& th, & td': {
-            border: '1px solid',
-            borderColor: 'grey.300',
-            p: 1,
-          },
-          '& th': {
-            bgcolor: 'grey.100',
-            fontWeight: 'bold',
-          },
-          ...sx,
-        }}
+      <div 
+        className={`prose prose-invert max-w-none
+          prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-2
+          prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+          prose-p:mb-3 prose-p:leading-relaxed
+          prose-ul:pl-6 prose-ol:pl-6 prose-ul:mb-3 prose-ol:mb-3
+          prose-li:mb-1
+          prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+          prose-blockquote:border-l-4 prose-blockquote:border-slate-400 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:my-4 prose-blockquote:bg-slate-800 prose-blockquote:italic
+          prose-code:font-mono prose-code:bg-slate-700 prose-code:p-1 prose-code:rounded
+          prose-pre:font-mono prose-pre:bg-slate-800 prose-pre:text-white prose-pre:p-4 prose-pre:rounded prose-pre:overflow-auto
+          prose-table:border-collapse prose-table:w-full prose-table:mb-4
+          prose-th:border prose-th:border-slate-600 prose-th:p-2 prose-th:bg-slate-700 prose-th:font-bold
+          prose-td:border prose-td:border-slate-600 prose-td:p-2
+          ${className}`}
+        style={customStyles}
       >
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {content}
         </ReactMarkdown>
-      </Box>
+      </div>
     );
   } catch (err) {
     console.error('Failed to render markdown:', err);
     // Fall back to the simple renderer
     return (
-      <Box sx={sx}>
+      <div className={className} style={inlineStyle}>
         <SimpleMarkdownRenderer content={content} />
-      </Box>
+      </div>
     );
   }
 };

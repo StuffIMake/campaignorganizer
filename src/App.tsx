@@ -1,11 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, Box, CircularProgress, Typography, Button } from '@mui/material';
-import { theme } from './theme';
-import { Navigation } from './components/Navigation';
-import { AudioTrackPanel } from './components/AudioTrackPanel';
 import { lazy, Suspense, useState, ComponentType } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Navigation } from './components/Navigation';
+import { AudioTrackPanel } from './components/AudioTrackPanel';
 
 // Regular import for the Dashboard as it's likely the first page users see
 import { Dashboard } from './pages/Dashboard';
@@ -24,14 +22,16 @@ const createLazyComponent = (
         console.error(`Component ${componentName} not found in the module`);
         return { 
           default: () => (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h5" color="error" gutterBottom>
+            <div className="p-3 text-center">
+              <h5 className="text-xl font-bold text-red-500 mb-2">
                 Failed to load component
-              </Typography>
-              <Button variant="contained" onClick={() => window.location.reload()}>
+              </h5>
+              <button 
+                className="px-4 py-2 bg-primary-600 text-white rounded-[var(--radius-md)] hover:bg-primary-700 transition-colors"
+                onClick={() => window.location.reload()}>
                 Reload Page
-              </Button>
-            </Box>
+              </button>
+            </div>
           )
         };
       })
@@ -39,17 +39,19 @@ const createLazyComponent = (
         console.error(`Error loading component ${componentName}:`, error);
         return { 
           default: () => (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h5" color="error" gutterBottom>
+            <div className="p-3 text-center">
+              <h5 className="text-xl font-bold text-red-500 mb-2">
                 Failed to load component
-              </Typography>
-              <Typography variant="body1" paragraph>
+              </h5>
+              <p className="mb-4">
                 Error: {error.message}
-              </Typography>
-              <Button variant="contained" onClick={() => window.location.reload()}>
+              </p>
+              <button 
+                className="px-4 py-2 bg-primary-600 text-white rounded-[var(--radius-md)] hover:bg-primary-700 transition-colors" 
+                onClick={() => window.location.reload()}>
                 Reload Page
-              </Button>
-            </Box>
+              </button>
+            </div>
           )
         };
       })
@@ -65,9 +67,9 @@ const CombatSessionViewLazy = createLazyComponent(() => import('./pages/CombatSe
 
 // Loading component for Suspense fallback
 const LoadingComponent = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-    <CircularProgress />
-  </Box>
+  <div className="flex justify-center items-center h-full">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-400"></div>
+  </div>
 );
 
 // Error handling component
@@ -77,17 +79,19 @@ interface ErrorFallbackProps {
 }
 
 const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
-  <Box sx={{ p: 3, textAlign: 'center' }}>
-    <Typography variant="h5" color="error" gutterBottom>
+  <div className="p-3 text-center">
+    <h5 className="text-xl font-bold text-red-500 mb-2">
       Something went wrong
-    </Typography>
-    <Typography variant="body1" paragraph>
+    </h5>
+    <p className="mb-4">
       {error.message}
-    </Typography>
-    <Button variant="contained" onClick={resetErrorBoundary}>
+    </p>
+    <button 
+      className="px-4 py-2 bg-primary-600 text-white rounded-[var(--radius-md)] hover:bg-primary-700 transition-colors"
+      onClick={resetErrorBoundary}>
       Try again
-    </Button>
-  </Box>
+    </button>
+  </div>
 );
 
 // Create a simple global variable to check if ReactMarkdown is loaded
@@ -106,12 +110,11 @@ const EnsureMarkdown = () => {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <div className="bg-gradient-to-b from-slate-950 to-slate-925 text-white min-h-screen font-[var(--font-body)]">
       <BrowserRouter basename="/campaignorganizer">
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <div className="flex flex-col h-screen">
           <Navigation />
-          <Box sx={{ flexGrow: 1, overflow: 'auto', position: 'relative' }}>
+          <div className="flex-grow overflow-auto relative scrollbar-thin">
             <Suspense fallback={<LoadingComponent />}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -122,15 +125,15 @@ function App() {
                 <Route path="/combat-session" element={<CombatSessionViewLazy />} />
               </Routes>
             </Suspense>
-          </Box>
+          </div>
           
           {/* AudioTrackPanel rendered at App level so it's globally available */}
           <AudioTrackPanel />
-        </Box>
+        </div>
         {/* This component is never visible, but ensures ReactMarkdown is included */}
         <EnsureMarkdown />
       </BrowserRouter>
-    </ThemeProvider>
+    </div>
   );
 }
 

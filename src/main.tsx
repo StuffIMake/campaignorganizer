@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css'; // Import Tailwind CSS styles
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { preloadRouteComponents } from './importManifest.ts';
 

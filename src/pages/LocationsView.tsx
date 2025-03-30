@@ -1,58 +1,61 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Chip,
-  Divider,
-  IconButton,
-  Collapse,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  CardActions,
-  FormControlLabel,
-  Switch,
-  Paper,
-  Alert,
-  Tooltip,
-  InputAdornment,
-  Snackbar,
-  FormHelperText,
-  Autocomplete
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import SaveIcon from '@mui/icons-material/Save';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import HelpIcon from '@mui/icons-material/Help';
-import ImageIcon from '@mui/icons-material/Image';
-import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import { useStore } from '../store';
 import { CustomLocation } from '../store';
 import { AssetManager } from '../services/assetManager';
 import { AudioTrackPanel } from '../components/AudioTrackPanel';
 import MarkdownContent from '../components/MarkdownContent';
+import { 
+  Autocomplete,
+  Box, 
+  Button, 
+  Card, 
+  CardActions, 
+  CardContent, 
+  Chip, 
+  Collapse,
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogTitle, 
+  Divider, 
+  FormControl, 
+  FormControlLabel,
+  Grid, 
+  IconButton, 
+  InputAdornment, 
+  InputLabel, 
+  List, 
+  ListItem, 
+  ListItemIcon, 
+  ListItemText, 
+  MenuItem,
+  Paper, 
+  Select, 
+  Snackbar, 
+  Stack,
+  Switch, 
+  Tab, 
+  Tabs, 
+  TextField, 
+  Tooltip, 
+  Typography 
+} from '../components/ui';
+import {
+  MusicNoteIcon,
+  VolumeUpIcon,
+  AddIcon,
+  EditIcon,
+  DeleteIcon,
+  ExpandMoreIcon,
+  ExpandLessIcon,
+  SaveIcon,
+  SearchIcon,
+  ClearIcon,
+  CloseIcon,
+  HelpIcon,
+  CodeIcon
+} from '../assets/icons';
 
 export const LocationsView: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -298,997 +301,497 @@ export const LocationsView: React.FC = () => {
     setSnackbarOpen(false);
   };
   
-  // Recursive function to render all locations with nested structure
+  // Recursive function to render location with nested structure
   const renderLocation = (location: CustomLocation, level = 0) => {
-    const isExpanded = expandedLocations[location.id] || false;
     const sublocations = getFilteredSublocationsByParentId(location.id);
     const hasSublocations = sublocations.length > 0;
+    const isExpanded = expandedLocations[location.id] || false;
     
     return (
-      <Box key={location.id} sx={{ mb: 2 }}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box>
-                <Typography variant="h6" component="div">
-                  {location.name}
-                </Typography>
-                
-                {location.imageUrl && (
-                  <Box sx={{ 
-                    mt: 1, 
-                    mb: 2, 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    height: 140,
-                    overflow: 'hidden',
-                    borderRadius: 1,
-                    border: '1px solid #ddd'
-                  }}>
-                    <Typography variant="caption" sx={{ mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
-                      Map Background:
-                    </Typography>
-                    <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                      <img 
-                        src={`/images/${location.imageUrl}`}
-                        alt={`Map of ${location.name}`}
-                        style={{ 
-                          maxWidth: '100%', 
-                          maxHeight: '100%',
-                          objectFit: 'contain' 
-                        }}
-                        onError={async (e) => {
-                          try {
-                            if (location.imageUrl) {
-                              const imageUrl = await AssetManager.getAssetUrl('images', location.imageUrl);
-                              if (imageUrl) {
-                                (e.target as HTMLImageElement).src = imageUrl;
-                              }
-                            }
-                          } catch (error) {
-                            console.error('Error loading location image:', error);
-                          }
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                )}
-                
-                <Box
+      <div key={location.id} className="relative">
+        <div className={`
+          flex items-center p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50
+          ${level > 0 ? 'pl-' + (level * 6 + 4) + ' border-l-2 border-slate-100 dark:border-slate-800' : ''}
+        `}>
+          {hasSublocations && (
+            <button
+              onClick={() => toggleLocationExpand(location.id)}
+              className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 mr-2 transition-colors"
+            >
+              {isExpanded ? (
+                <ExpandLessIcon className="h-5 w-5 text-slate-500" />
+              ) : (
+                <ExpandMoreIcon className="h-5 w-5 text-slate-500" />
+              )}
+            </button>
+          )}
+          
+          <div className="flex-grow min-w-0">
+            <div className="flex items-center">
+              <h3 className="text-base font-medium text-slate-900 dark:text-white truncate">{location.name}</h3>
+              
+              {location.backgroundMusic && (
+                <Tooltip title={`Background Music: ${location.backgroundMusic}`}>
+                  <div className="ml-2 text-slate-400">
+                    <MusicNoteIcon className="h-4 w-4" />
+                  </div>
+                </Tooltip>
+              )}
+              
+              {location.entrySound && (
+                <Tooltip title={`Entry Sound: ${location.entrySound}`}>
+                  <div className="ml-2 text-slate-400">
+                    <VolumeUpIcon className="h-4 w-4" />
+                  </div>
+                </Tooltip>
+              )}
+            </div>
+            
+            {location.description && (
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                {location.descriptionType === 'markdown' ? 
+                  location.description.replace(/[#*`]/g, '') : 
+                  location.descriptionType === 'image' ? 'Image description' : 'PDF document'
+                }
+              </p>
+            )}
+            
+            {location.connectedLocations && location.connectedLocations.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {location.connectedLocations.map(connId => {
+                  const connLoc = locations.find(l => l.id === connId);
+                  return connLoc ? (
+                    <Chip 
+                      key={connId} 
+                      label={connLoc.name} 
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      className="text-xs"
+                    />
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center ml-4 space-x-1">
+            {location.description && location.descriptionType === 'markdown' && (
+              <Tooltip title="View Description">
+                <IconButton
                   onClick={() => {
                     setViewingLocationDescription(location.description);
                     setViewingLocationName(location.name);
                     setShowDescriptionDialog(true);
                   }}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    },
-                    borderRadius: 1,
-                    p: 1,
-                    mt: 1
-                  }}
+                  size="small"
                 >
-                  <Box 
-                    sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
-                  >
-                    <MarkdownContent 
-                      content={location.description} 
-                      sx={{
-                        '& table': {
-                          display: 'block',
-                          maxWidth: '100%',
-                          overflow: 'auto',
-                          whiteSpace: 'nowrap',
-                        },
-                        '& th, & td': {
-                          px: 1,
-                          py: 0.5,
-                          fontSize: '0.8rem',
-                        }
-                      }}
-                    />
-                  </Box>
-                  {location.description.length > 100 && (
-                    <Typography 
-                      variant="caption" 
-                      color="primary" 
-                      sx={{ display: 'block', mt: 0.5 }}
-                    >
-                      Click to view full description
-                    </Typography>
-                  )}
-                </Box>
-                
-                <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {location.backgroundMusic && (
-                    <Chip 
-                      icon={<MusicNoteIcon />} 
-                      label={`Music: ${location.backgroundMusic}`} 
-                      size="small" 
-                      variant="outlined" 
-                    />
-                  )}
-                  
-                  {location.entrySound && (
-                    <Chip 
-                      icon={<VolumeUpIcon />} 
-                      label={`Sound: ${location.entrySound}`} 
-                      size="small" 
-                      variant="outlined" 
-                    />
-                  )}
-                  
-                  {location.coordinates && (
-                    <Chip 
-                      label={`Coords: ${location.coordinates[0]}, ${location.coordinates[1]}`} 
-                      size="small" 
-                      variant="outlined" 
-                    />
-                  )}
-                  
-                  {location.mixWithParent && (
-                    <Chip 
-                      label="Mixes with parent" 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined" 
-                    />
-                  )}
-                  
-                  {location.connectedLocations && location.connectedLocations.length > 0 && (
-                    <Chip 
-                      label={`${location.connectedLocations.length} Connected Locations`}
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const connectedNames = location?.connectedLocations
-                          ?.map((id: string) => locations.find(loc => loc.id === id)?.name || 'Unknown')
-                          .join(', ');
-                        alert(`Connected to: ${connectedNames}`);
-                      }}
-                    />
-                  )}
-
-                  {hasSublocations && (
-                    <Chip 
-                      label={`${sublocations.length} Sublocations`}
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const sublocationNames = sublocations
-                          .map((loc: any) => loc.name)
-                          .join(', ');
-                        alert(`Sublocations: ${sublocationNames}`);
-                      }}
-                    />
-                  )}
-                </Box>
-              </Box>
-              
-              <Box>
-                <IconButton onClick={() => handleEditLocation(location.id)}>
-                  <EditIcon />
+                  <CodeIcon className="h-5 w-5" />
                 </IconButton>
-                <IconButton onClick={() => handleDeleteLocation(location.id)}>
-                  <DeleteIcon />
-                </IconButton>
-                {hasSublocations && (
-                  <IconButton onClick={() => toggleLocationExpand(location.id)}>
-                    {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </IconButton>
-                )}
-              </Box>
-            </Box>
-          </CardContent>
-          
-          <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
-            <Button 
-              size="small" 
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setNewLocation({
-                  ...newLocation,
-                  parentLocationId: location.id
-                });
-                setIsAddDialogOpen(true);
-              }}
-            >
-              Add Sublocation
-            </Button>
-          </CardActions>
-        </Card>
+              </Tooltip>
+            )}
+            
+            <Tooltip title="Edit Location">
+              <IconButton
+                onClick={() => handleEditLocation(location.id)}
+                size="small"
+              >
+                <EditIcon className="h-5 w-5" />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="Delete Location">
+              <IconButton
+                onClick={() => handleDeleteLocation(location.id)}
+                size="small"
+                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <DeleteIcon className="h-5 w-5" />
+              </IconButton>
+            </Tooltip>
+          </div>
+        </div>
         
-        {/* Sublocations */}
         {hasSublocations && isExpanded && (
-          <Box sx={{ pl: 4, mt: 1 }}>
-            {sublocations.map(subloc => renderLocation(subloc, level + 1))}
-          </Box>
+          <div className="border-l-2 border-slate-100 dark:border-slate-800 ml-10">
+            {sublocations.map(sublocation => renderLocation(sublocation, level + 1))}
+          </div>
         )}
-      </Box>
+      </div>
     );
   };
 
+  // Main render section
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Locations</Typography>
-        <Box>
-          <Button 
-            variant="outlined" 
-            color="success" 
-            startIcon={<SaveIcon />} 
-            onClick={handleSaveData}
-            disabled={isSaving}
-            sx={{ mr: 2 }}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Locations</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon className="h-5 w-5 text-slate-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search locations..."
+              className="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setSearchQuery('')}
+              >
+                <ClearIcon className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+              </button>
+            )}
+          </div>
           
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={() => {
-              resetNewLocationForm();
-              setIsAddDialogOpen(true);
-            }}
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            variant="primary"
+            startIcon={<AddIcon />}
           >
             Add Location
           </Button>
-        </Box>
-      </Box>
-      
-      {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search locations by name, description, connected locations, parent location..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton 
-                  aria-label="clear search" 
-                  onClick={() => setSearchQuery('')}
-                  edge="end"
-                  size="small"
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-        />
-      </Box>
-      
-      {filteredLocations.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          {locations.length === 0 ? (
-            <>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Locations Yet
-              </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Add your first location to get started.
-              </Typography>
-              <Button 
-                variant="contained" 
-                startIcon={<AddIcon />} 
-                onClick={() => setIsAddDialogOpen(true)}
-              >
-                Add Location
-              </Button>
-            </>
-          ) : (
-            <>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Locations Found
-              </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Try adjusting your search terms.
-              </Typography>
-              <Button 
-                variant="outlined" 
-                onClick={() => setSearchQuery('')}
-              >
-                Clear Search
-              </Button>
-            </>
-          )}
-        </Paper>
-      ) : (
-        // Locations list
-        <Box>
-          {filteredTopLevelLocations.map(location => renderLocation(location))}
           
-          {/* When searching, also show child locations that match but whose parents don't */}
-          {searchQuery.trim() && (
-            <>
-              {filteredLocations.filter(loc => 
-                loc.parentLocationId && 
-                !filteredLocations.some(parent => 
-                  parent.id === loc.parentLocationId
-                )
-              ).length > 0 && (
-                <Box sx={{ mt: 4, mb: 2 }}>
-                  <Typography variant="h6" color="text.secondary">
-                    Other Matching Locations
-                  </Typography>
-                  <Divider sx={{ mt: 1, mb: 2 }} />
-                </Box>
-              )}
-              {filteredLocations.filter(loc => 
-                loc.parentLocationId && 
-                !filteredLocations.some(parent => 
-                  parent.id === loc.parentLocationId
-                )
-              ).map(location => renderLocation(location))}
-            </>
-          )}
-        </Box>
-      )}
+          <Button
+            onClick={handleSaveData}
+            variant="outline"
+            color="primary"
+            startIcon={<SaveIcon />}
+            isLoading={isSaving}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+      
+      {/* Locations List */}
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {/* Empty state */}
+        {filteredTopLevelLocations.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No locations found</h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mb-6">
+              {searchQuery 
+                ? "No locations match your search criteria. Try adjusting your search terms."
+                : "Start building your world by adding your first location."}
+            </p>
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              variant="primary"
+              startIcon={<AddIcon />}
+            >
+              Add First Location
+            </Button>
+          </div>
+        )}
+        
+        {/* Location list */}
+        {filteredTopLevelLocations.length > 0 && (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {filteredTopLevelLocations.map(location => renderLocation(location))}
+          </div>
+        )}
+      </div>
       
       {/* Add Location Dialog */}
-      <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        aria-labelledby="add-location-title"
+      >
         <DialogTitle>Add New Location</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={6}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <TextField
-                label="Name"
+                autoFocus
+                label="Location Name"
                 fullWidth
                 value={newLocation.name}
-                onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+                onChange={(e) => setNewLocation({...newLocation, name: e.target.value})}
               />
-            </Grid>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={locations}
-                value={locations.find(loc => loc.id === newLocation.parentLocationId) || null}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  parentLocationId: newValue?.id || '' 
-                })}
-                getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Parent Location"
-                    fullWidth
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
+            <div className="sm:col-span-2">
               <FormControl fullWidth>
                 <InputLabel>Description Type</InputLabel>
                 <Select
                   value={newLocation.descriptionType}
-                  label="Description Type"
-                  onChange={(e) => setNewLocation({ 
-                    ...newLocation, 
-                    descriptionType: e.target.value as 'markdown' | 'image' | 'pdf' 
-                  })}
+                  onChange={(e) => setNewLocation({...newLocation, descriptionType: e.target.value as 'markdown' | 'image' | 'pdf'})}
                 >
-                  <MenuItem value="markdown">Markdown</MenuItem>
+                  <MenuItem value="markdown">Markdown Text</MenuItem>
+                  <MenuItem value="image">Image</MenuItem>
+                  <MenuItem value="pdf">PDF Document</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </div>
             
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle2">Description</Typography>
-                <Tooltip title={
-                  <>
-                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-                      Markdown Table Example:
-                    </Typography>
-                    <Typography variant="caption" component="pre" sx={{ display: 'block', mt: 1, fontFamily: 'monospace' }}>
-                      | Header 1 | Header 2 | Header 3 |\n
-                      | -------- | -------- | -------- |\n
-                      | Cell 1   | Cell 2   | Cell 3   |\n
-                      | Cell 4   | Cell 5   | Cell 6   |
-                    </Typography>
-                  </>
-                }>
-                  <IconButton size="small" sx={{ ml: 1 }}>
-                    <HelpIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={newLocation.description}
-                onChange={(e) => setNewLocation({ ...newLocation, description: e.target.value })}
-              />
-            </Grid>
-
-            {newLocation.descriptionType === 'markdown' && (
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" sx={{ mt: 1, mb: 1 }}>
-                  Preview
-                </Typography>
-                <Paper 
-                  sx={{ 
-                    p: 2, 
-                    height: '200px', 
-                    overflow: 'auto',
-                    bgcolor: 'background.default',
-                    border: 1,
-                    borderColor: 'divider'
-                  }}
-                >
-                  <MarkdownContent content={newLocation.description} />
-                </Paper>
-              </Grid>
-            )}
+            <div className="sm:col-span-2">
+              {newLocation.descriptionType === 'markdown' ? (
+                <TextField
+                  label="Description"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  value={newLocation.description}
+                  onChange={(e) => setNewLocation({...newLocation, description: e.target.value})}
+                />
+              ) : newLocation.descriptionType === 'image' ? (
+                <FormControl fullWidth>
+                  <InputLabel>Image</InputLabel>
+                  <Select
+                    value={newLocation.imageUrl}
+                    onChange={(e) => setNewLocation({...newLocation, imageUrl: e.target.value as string})}
+                  >
+                    {imageFiles.map(file => (
+                      <MenuItem key={file} value={file}>{file}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <FormControl fullWidth>
+                  <InputLabel>PDF Document</InputLabel>
+                  <Select
+                    value={newLocation.description}
+                    onChange={(e) => setNewLocation({...newLocation, description: e.target.value as string})}
+                  >
+                    <MenuItem value="">Select a PDF</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+            </div>
             
-            <Grid item xs={12}>
-              <Autocomplete
-                multiple
-                options={locations.filter(loc => loc.id !== newLocation.parentLocationId)}
-                value={locations.filter(loc => newLocation.connectedLocations.includes(loc.id))}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  connectedLocations: newValue.map(item => item.id) 
-                })}
-                getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Connected Locations"
-                    fullWidth
-                    helperText="Select locations that are connected to this one"
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      label={option.name}
-                      {...getTagProps({ index })}
-                      key={option.id}
-                    />
-                  ))
-                }
-              />
-            </Grid>
+            <FormControl fullWidth>
+              <InputLabel>Parent Location</InputLabel>
+              <Select
+                value={newLocation.parentLocationId}
+                onChange={(e) => setNewLocation({...newLocation, parentLocationId: e.target.value as string})}
+              >
+                <MenuItem value="">None (Top Level)</MenuItem>
+                {locations.map(loc => (
+                  <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={audioFiles}
+            <FormControl fullWidth>
+              <InputLabel>Background Music</InputLabel>
+              <Select
                 value={newLocation.backgroundMusic}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  backgroundMusic: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Background Music"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
+                onChange={(e) => setNewLocation({...newLocation, backgroundMusic: e.target.value as string})}
+              >
+                <MenuItem value="">None</MenuItem>
+                {audioFiles.map(file => (
+                  <MenuItem key={file} value={file}>{file}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={audioFiles}
+            <FormControl fullWidth>
+              <InputLabel>Entry Sound</InputLabel>
+              <Select
                 value={newLocation.entrySound}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  entrySound: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Entry Sound"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
+                onChange={(e) => setNewLocation({...newLocation, entrySound: e.target.value as string})}
+              >
+                <MenuItem value="">None</MenuItem>
+                {audioFiles.map(file => (
+                  <MenuItem key={file} value={file}>{file}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={imageFiles}
-                value={newLocation.imageUrl}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  imageUrl: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Background Image"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Grid container spacing={1}>
-                <Grid item xs={6}>
-                  <TextField
-                    label="X Coordinate"
-                    fullWidth
-                    value={newLocation.coordinates[0]}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow empty string for easier editing
-                      if (value === '') {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: ['', newLocation.coordinates[1]]
-                        });
-                      } else {
-                        const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
-                          setNewLocation({
-                            ...newLocation,
-                            coordinates: [parsed, newLocation.coordinates[1]]
-                          });
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // When field loses focus, ensure we have a valid number
-                      const x = newLocation.coordinates[0];
-                      if (x === '' || x === null || isNaN(Number(x))) {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [0, newLocation.coordinates[1]]
-                        });
-                      }
-                    }}
-                    InputProps={{
-                      inputProps: { 
-                        step: 0.01,
-                      }
-                    }}
-                    helperText={newLocation.parentLocationId ? "Value between 0-1 (0.5 is center)" : undefined}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Y Coordinate"
-                    fullWidth
-                    value={newLocation.coordinates[1]}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow empty string for easier editing
-                      if (value === '') {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [newLocation.coordinates[0], '']
-                        });
-                      } else {
-                        const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
-                          setNewLocation({
-                            ...newLocation,
-                            coordinates: [newLocation.coordinates[0], parsed]
-                          });
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // When field loses focus, ensure we have a valid number
-                      const y = newLocation.coordinates[1];
-                      if (y === '' || y === null || isNaN(Number(y))) {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [newLocation.coordinates[0], 0]
-                        });
-                      }
-                    }}
-                    InputProps={{
-                      inputProps: { 
-                        step: 0.01,
-                      }
-                    }}
-                    helperText={newLocation.parentLocationId ? "Value between 0-1 (0.5 is center)" : undefined}
-                  />
-                </Grid>
-              </Grid>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newLocation.mixWithParent}
-                    onChange={(e) => setNewLocation({ ...newLocation, mixWithParent: e.target.checked })}
-                  />
-                }
-                label="Mix audio with parent location"
-              />
-              <Tooltip title="When enabled, entering this location will play its audio alongside the parent location's audio.">
-                <IconButton size="small">
-                  <HelpIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={newLocation.mixWithParent}
+                  onChange={(e) => setNewLocation({...newLocation, mixWithParent: e.target.checked})}
+                />
+              }
+              label="Mix audio with parent location"
+            />
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setIsAddDialogOpen(false)} variant="text">
+            Cancel
+          </Button>
           <Button 
             onClick={handleAddLocation} 
-            variant="contained"
-            disabled={!newLocation.name}
+            variant="primary"
+            disabled={!newLocation.name.trim()}
           >
             Add Location
           </Button>
         </DialogActions>
       </Dialog>
-      
-      {/* Edit Location Dialog */}
-      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="md" fullWidth>
+
+      {/* Edit Location Dialog - fix DialogTitle */}
+      <Dialog
+        open={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        aria-labelledby="edit-location-title"
+      >
         <DialogTitle>Edit Location</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={6}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <TextField
-                label="Name"
+                autoFocus
+                label="Location Name"
                 fullWidth
                 value={newLocation.name}
-                onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+                onChange={(e) => setNewLocation({...newLocation, name: e.target.value})}
               />
-            </Grid>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={locations.filter(loc => loc.id !== editingLocation)}
-                value={locations.find(loc => loc.id === newLocation.parentLocationId) || null}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  parentLocationId: newValue?.id || '' 
-                })}
-                getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Parent Location"
-                    fullWidth
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
+            <div className="sm:col-span-2">
               <FormControl fullWidth>
                 <InputLabel>Description Type</InputLabel>
                 <Select
                   value={newLocation.descriptionType}
-                  label="Description Type"
-                  onChange={(e) => setNewLocation({ 
-                    ...newLocation, 
-                    descriptionType: e.target.value as 'markdown' | 'image' | 'pdf' 
-                  })}
+                  onChange={(e) => setNewLocation({...newLocation, descriptionType: e.target.value as 'markdown' | 'image' | 'pdf'})}
                 >
-                  <MenuItem value="markdown">Markdown</MenuItem>
+                  <MenuItem value="markdown">Markdown Text</MenuItem>
+                  <MenuItem value="image">Image</MenuItem>
+                  <MenuItem value="pdf">PDF Document</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </div>
             
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle2">Description</Typography>
-                <Tooltip title={
-                  <>
-                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold' }}>
-                      Markdown Table Example:
-                    </Typography>
-                    <Typography variant="caption" component="pre" sx={{ display: 'block', mt: 1, fontFamily: 'monospace' }}>
-                      | Header 1 | Header 2 | Header 3 |\n
-                      | -------- | -------- | -------- |\n
-                      | Cell 1   | Cell 2   | Cell 3   |\n
-                      | Cell 4   | Cell 5   | Cell 6   |
-                    </Typography>
-                  </>
-                }>
-                  <IconButton size="small" sx={{ ml: 1 }}>
-                    <HelpIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={newLocation.description}
-                onChange={(e) => setNewLocation({ ...newLocation, description: e.target.value })}
-              />
-            </Grid>
-
-            {newLocation.descriptionType === 'markdown' && (
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" sx={{ mt: 1, mb: 1 }}>
-                  Preview
-                </Typography>
-                <Paper 
-                  sx={{ 
-                    p: 2, 
-                    height: '200px', 
-                    overflow: 'auto',
-                    bgcolor: 'background.default',
-                    border: 1,
-                    borderColor: 'divider'
-                  }}
-                >
-                  <MarkdownContent content={newLocation.description} />
-                </Paper>
-              </Grid>
-            )}
+            <div className="sm:col-span-2">
+              {newLocation.descriptionType === 'markdown' ? (
+                <TextField
+                  label="Description"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  value={newLocation.description}
+                  onChange={(e) => setNewLocation({...newLocation, description: e.target.value})}
+                />
+              ) : newLocation.descriptionType === 'image' ? (
+                <FormControl fullWidth>
+                  <InputLabel>Image</InputLabel>
+                  <Select
+                    value={newLocation.imageUrl}
+                    onChange={(e) => setNewLocation({...newLocation, imageUrl: e.target.value as string})}
+                  >
+                    {imageFiles.map(file => (
+                      <MenuItem key={file} value={file}>{file}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <FormControl fullWidth>
+                  <InputLabel>PDF Document</InputLabel>
+                  <Select
+                    value={newLocation.description}
+                    onChange={(e) => setNewLocation({...newLocation, description: e.target.value as string})}
+                  >
+                    <MenuItem value="">Select a PDF</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+            </div>
             
-            <Grid item xs={12}>
-              <Autocomplete
-                multiple
-                options={locations.filter(loc => loc.id !== editingLocation && loc.id !== newLocation.parentLocationId)}
-                value={locations.filter(loc => newLocation.connectedLocations.includes(loc.id))}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  connectedLocations: newValue.map(item => item.id) 
-                })}
-                getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Connected Locations"
-                    fullWidth
-                    helperText="Select locations that are connected to this one"
-                  />
-                )}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      label={option.name}
-                      {...getTagProps({ index })}
-                      key={option.id}
-                    />
-                  ))
-                }
-              />
-            </Grid>
+            <FormControl fullWidth>
+              <InputLabel>Parent Location</InputLabel>
+              <Select
+                value={newLocation.parentLocationId}
+                onChange={(e) => setNewLocation({...newLocation, parentLocationId: e.target.value as string})}
+              >
+                <MenuItem value="">None (Top Level)</MenuItem>
+                {locations.map(loc => (
+                  <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={audioFiles}
+            <FormControl fullWidth>
+              <InputLabel>Background Music</InputLabel>
+              <Select
                 value={newLocation.backgroundMusic}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  backgroundMusic: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Background Music"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
+                onChange={(e) => setNewLocation({...newLocation, backgroundMusic: e.target.value as string})}
+              >
+                <MenuItem value="">None</MenuItem>
+                {audioFiles.map(file => (
+                  <MenuItem key={file} value={file}>{file}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={audioFiles}
+            <FormControl fullWidth>
+              <InputLabel>Entry Sound</InputLabel>
+              <Select
                 value={newLocation.entrySound}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  entrySound: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Entry Sound"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
+                onChange={(e) => setNewLocation({...newLocation, entrySound: e.target.value as string})}
+              >
+                <MenuItem value="">None</MenuItem>
+                {audioFiles.map(file => (
+                  <MenuItem key={file} value={file}>{file}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={imageFiles}
-                value={newLocation.imageUrl}
-                onChange={(_, newValue) => setNewLocation({ 
-                  ...newLocation, 
-                  imageUrl: newValue || '' 
-                })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Background Image"
-                    fullWidth
-                  />
-                )}
-                freeSolo
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Grid container spacing={1}>
-                <Grid item xs={6}>
-                  <TextField
-                    label="X Coordinate"
-                    fullWidth
-                    value={newLocation.coordinates[0]}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow empty string for easier editing
-                      if (value === '') {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: ['', newLocation.coordinates[1]]
-                        });
-                      } else {
-                        const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
-                          setNewLocation({
-                            ...newLocation,
-                            coordinates: [parsed, newLocation.coordinates[1]]
-                          });
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // When field loses focus, ensure we have a valid number
-                      const x = newLocation.coordinates[0];
-                      if (x === '' || x === null || isNaN(Number(x))) {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [0, newLocation.coordinates[1]]
-                        });
-                      }
-                    }}
-                    InputProps={{
-                      inputProps: { 
-                        step: 0.01,
-                      }
-                    }}
-                    helperText={newLocation.parentLocationId ? "Value between 0-1 (0.5 is center)" : undefined}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Y Coordinate"
-                    fullWidth
-                    value={newLocation.coordinates[1]}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow empty string for easier editing
-                      if (value === '') {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [newLocation.coordinates[0], '']
-                        });
-                      } else {
-                        const parsed = parseFloat(value);
-                        if (!isNaN(parsed)) {
-                          setNewLocation({
-                            ...newLocation,
-                            coordinates: [newLocation.coordinates[0], parsed]
-                          });
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // When field loses focus, ensure we have a valid number
-                      const y = newLocation.coordinates[1];
-                      if (y === '' || y === null || isNaN(Number(y))) {
-                        setNewLocation({
-                          ...newLocation,
-                          coordinates: [newLocation.coordinates[0], 0]
-                        });
-                      }
-                    }}
-                    InputProps={{
-                      inputProps: { 
-                        step: 0.01,
-                      }
-                    }}
-                    helperText={newLocation.parentLocationId ? "Value between 0-1 (0.5 is center)" : undefined}
-                  />
-                </Grid>
-              </Grid>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newLocation.mixWithParent}
-                    onChange={(e) => setNewLocation({ ...newLocation, mixWithParent: e.target.checked })}
-                  />
-                }
-                label="Mix audio with parent location"
-              />
-              <Tooltip title="When enabled, entering this location will play its audio alongside the parent location's audio.">
-                <IconButton size="small">
-                  <HelpIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={newLocation.mixWithParent}
+                  onChange={(e) => setNewLocation({...newLocation, mixWithParent: e.target.checked})}
+                />
+              }
+              label="Mix audio with parent location"
+            />
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setIsEditDialogOpen(false)} variant="text">
+            Cancel
+          </Button>
           <Button 
             onClick={handleSaveLocation} 
-            variant="contained"
-            disabled={!newLocation.name}
+            variant="primary"
+            disabled={!newLocation.name.trim()}
           >
             Save Changes
           </Button>
         </DialogActions>
       </Dialog>
-      
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        message={snackbarMessage}
-      />
-      
-      {/* Description Dialog */}
+
+      {/* Description Dialog - fix DialogTitle */}
       <Dialog
         open={showDescriptionDialog}
         onClose={() => setShowDescriptionDialog(false)}
+        aria-labelledby="view-description-title"
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          {viewingLocationName} - Description
-          <IconButton
-            aria-label="close"
-            onClick={() => setShowDescriptionDialog(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
+        <DialogTitle>{viewingLocationName}</DialogTitle>
+        <DialogContent>
           <MarkdownContent content={viewingLocationDescription} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowDescriptionDialog(false)}>Close</Button>
+          <Button onClick={() => setShowDescriptionDialog(false)} variant="text">
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        message={snackbarMessage}
+      />
+    </div>
   );
 }; 
