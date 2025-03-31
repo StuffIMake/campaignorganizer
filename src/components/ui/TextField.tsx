@@ -1,194 +1,159 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef } from 'react';
 
-interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
-  label?: React.ReactNode;
-  helperText?: React.ReactNode;
-  variant?: 'outlined' | 'filled' | 'standard';
-  size?: 'small' | 'medium';
-  fullWidth?: boolean;
+// TextField props interface
+export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  label?: string;
+  helperText?: string;
   error?: boolean;
-  required?: boolean;
-  disabled?: boolean;
-  className?: string;
-  margin?: 'none' | 'dense' | 'normal';
+  fullWidth?: boolean;
+  variant?: 'standard' | 'outlined' | 'filled' | 'glass';
   InputProps?: {
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
-    className?: string;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
   };
-  InputLabelProps?: {
-    shrink?: boolean;
-    className?: string;
-  };
-  multiline?: boolean;
-  rows?: number;
-  maxRows?: number;
-  sx?: Record<string, any>;
+  size?: 'small' | 'medium' | 'large';
 }
 
-const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
   label,
   helperText,
-  variant = 'outlined',
-  size = 'medium',
-  fullWidth = false,
   error = false,
-  required = false,
-  disabled = false,
+  fullWidth = false,
+  variant = 'outlined',
   className = '',
-  margin = 'normal',
-  InputProps = {},
-  InputLabelProps = {},
-  multiline = false,
-  rows = 1,
-  maxRows,
-  sx = {},
-  id,
+  placeholder,
+  disabled = false,
+  required = false,
+  InputProps,
+  size = 'medium',
   ...props
 }, ref) => {
-  const [focused, setFocused] = useState(false);
-  const [hasValue, setHasValue] = useState(!!props.value || !!props.defaultValue);
+  // Size classes
+  const sizeMap = {
+    small: {
+      container: 'mb-3',
+      label: 'text-xs mb-1',
+      input: 'py-1.5 px-3 text-sm',
+      helper: 'text-xs mt-1',
+      adornment: 'h-4 w-4'
+    },
+    medium: {
+      container: 'mb-4',
+      label: 'text-sm mb-1.5',
+      input: 'py-2 px-3 text-sm',
+      helper: 'text-xs mt-1.5',
+      adornment: 'h-5 w-5'
+    },
+    large: {
+      container: 'mb-5',
+      label: 'text-base mb-2',
+      input: 'py-2.5 px-4 text-base',
+      helper: 'text-sm mt-1.5',
+      adornment: 'h-5 w-5'
+    }
+  }[size];
   
-  // Generate unique ID if not provided
-  const inputId = id || `textfield-${Math.random().toString(36).substring(2, 9)}`;
+  // Container classes
+  const containerClasses = `
+    ${sizeMap.container}
+    ${fullWidth ? 'w-full' : ''}
+    ${className}
+  `.trim();
   
-  // Convert sx props to inline styles
-  const inlineStyle: React.CSSProperties = {};
+  // Label classes
+  const labelClasses = `
+    block ${sizeMap.label} font-medium
+    ${error ? 'text-red-500' : 'text-slate-300'}
+  `.trim();
   
-  // Handle common sx properties
-  if (sx.mt) inlineStyle.marginTop = `${sx.mt * 0.25}rem`;
-  if (sx.mb) inlineStyle.marginBottom = `${sx.mb * 0.25}rem`;
-  if (sx.ml) inlineStyle.marginLeft = `${sx.ml * 0.25}rem`;
-  if (sx.mr) inlineStyle.marginRight = `${sx.mr * 0.25}rem`;
-  if (sx.mx) inlineStyle.marginLeft = inlineStyle.marginRight = `${sx.mx * 0.25}rem`;
-  if (sx.my) inlineStyle.marginTop = inlineStyle.marginBottom = `${sx.my * 0.25}rem`;
-  if (sx.m) inlineStyle.margin = `${sx.m * 0.25}rem`;
-  if (sx.width) inlineStyle.width = typeof sx.width === 'number' ? `${sx.width}px` : sx.width;
+  // Helper text classes
+  const helperTextClasses = `
+    ${sizeMap.helper}
+    ${error ? 'text-red-500' : 'text-slate-400'}
+  `.trim();
   
-  // Handle fullWidth
-  if (fullWidth) {
-    inlineStyle.width = '100%';
+  // Base input classes
+  let inputClasses = `
+    block w-full appearance-none 
+    transition-all duration-200 ease-in-out
+    focus:outline-none focus:ring-2 focus:ring-indigo-500/70 
+    ${sizeMap.input}
+    ${disabled ? 'opacity-60 cursor-not-allowed' : ''}
+    ${InputProps?.startAdornment ? 'pl-10' : ''}
+    ${InputProps?.endAdornment ? 'pr-10' : ''}
+  `.trim();
+  
+  // Variant specific classes
+  if (variant === 'outlined') {
+    inputClasses += error
+      ? ' border border-red-500 bg-red-500/5 focus:border-red-500 rounded-[var(--radius-md)] text-slate-300'
+      : ' border border-slate-700 focus:border-indigo-500/70 bg-slate-800/30 hover:bg-slate-800/50 hover:border-slate-600 rounded-[var(--radius-md)] text-slate-300';
+  } else if (variant === 'filled') {
+    inputClasses += error
+      ? ' border-b-2 border-red-500 bg-red-500/5 rounded-t-[var(--radius-md)] text-slate-300'
+      : ' border-b-2 border-slate-700 focus:border-indigo-500/70 bg-slate-800/50 hover:bg-slate-800/70 rounded-t-[var(--radius-md)] text-slate-300';
+  } else if (variant === 'glass') {
+    inputClasses += error
+      ? ' border border-red-500/50 bg-white/5 backdrop-blur-md rounded-[var(--radius-md)] text-slate-300 shadow-sm'
+      : ' border border-white/10 focus:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-[var(--radius-md)] text-slate-300 shadow-sm';
+  } else {
+    // Standard variant
+    inputClasses += error
+      ? ' border-b-2 border-red-500 bg-transparent hover:bg-slate-900/20 text-slate-300'
+      : ' border-b-2 border-slate-700 focus:border-indigo-500/70 bg-transparent hover:bg-slate-900/20 text-slate-300';
   }
   
-  // Handle margin
-  const marginClasses = {
-    none: '',
-    dense: 'my-1',
-    normal: 'my-2'
-  }[margin];
+  // Input wrapper for adornments
+  const inputWrapperClasses = 'relative';
   
-  // Handle variant classes
-  const variantClasses = {
-    outlined: 'border rounded-md border-slate-600',
-    filled: 'border-b rounded-t-md bg-slate-800 border-slate-600',
-    standard: 'border-b border-slate-600'
-  }[variant];
+  // Adornment positioning classes
+  const startAdornmentClasses = `
+    absolute left-3 top-1/2 transform -translate-y-1/2
+    ${error ? 'text-red-500' : 'text-slate-400'}
+    ${disabled ? 'opacity-60' : ''}
+  `.trim();
   
-  // Handle size
-  const sizeClasses = size === 'small' ? 'text-sm' : 'text-base';
-  
-  // Handle states
-  const stateClasses = [
-    disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : '',
-    error ? 'border-red-500' : (focused ? 'border-primary-500' : ''),
-    focused ? 'ring-1 ring-primary-500' : ''
-  ].join(' ');
-  
-  // Handle label floating
-  const shouldShrink = InputLabelProps.shrink !== undefined 
-    ? InputLabelProps.shrink 
-    : focused || hasValue;
-  
-  const labelPositionClass = shouldShrink
-    ? 'text-xs transform -translate-y-6 top-2'
-    : 'text-base top-1/2 -translate-y-1/2';
-  
-  const labelSizeClass = size === 'small' ? 'text-xs' : 'text-sm';
-  
-  // Handle input change to track if it has value
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHasValue(!!e.target.value);
-    if (props.onChange) {
-      props.onChange(e);
-    }
-  };
-  
-  // Calculate textarea height based on rows and maxRows
-  const textareaStyle: React.CSSProperties = {};
-  if (multiline) {
-    textareaStyle.minHeight = `${rows * 1.5}rem`;
-    if (maxRows) {
-      textareaStyle.maxHeight = `${maxRows * 1.5}rem`;
-    }
-  }
+  const endAdornmentClasses = `
+    absolute right-3 top-1/2 transform -translate-y-1/2
+    ${error ? 'text-red-500' : 'text-slate-400'}
+    ${disabled ? 'opacity-60' : ''}
+  `.trim();
   
   return (
-    <div 
-      ref={ref}
-      className={`relative inline-block ${fullWidth ? 'w-full' : ''} ${marginClasses} ${className}`}
-      style={inlineStyle}
-    >
+    <div className={containerClasses}>
       {label && (
-        <label 
-          htmlFor={inputId}
-          className={`
-            absolute left-3 transition-all duration-200 
-            ${labelPositionClass} 
-            ${labelSizeClass}
-            ${error ? 'text-red-500' : focused ? 'text-primary-400' : 'text-slate-400'}
-            ${disabled ? 'text-gray-400' : ''}
-            ${shouldShrink && variant !== 'standard' ? 'bg-white px-1' : ''}
-            ${InputLabelProps.className || ''}
-          `}
-        >
-          {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        <label className={labelClasses}>
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       
-      <div className={`relative ${variantClasses}`}>
-        {InputProps.startAdornment && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+      <div className={inputWrapperClasses}>
+        {InputProps?.startAdornment && (
+          <div className={startAdornmentClasses}>
             {InputProps.startAdornment}
           </div>
         )}
         
         <input
-          {...props}
-          {...InputProps.inputProps}
-          id={inputId}
-          className={`
-            w-full bg-transparent focus:outline-none py-2 px-3
-            ${sizeClasses}
-            ${stateClasses}
-            ${InputProps.startAdornment ? 'pl-10' : ''}
-            ${InputProps.endAdornment ? 'pr-10' : ''}
-            ${InputProps.className || ''}
-          `}
+          ref={ref}
           disabled={disabled}
+          placeholder={placeholder}
           required={required}
-          onFocus={(e) => {
-            setFocused(true);
-            props.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            props.onBlur?.(e);
-          }}
-          onChange={handleChange}
+          className={inputClasses}
+          aria-invalid={error}
+          {...props}
         />
         
-        {InputProps.endAdornment && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+        {InputProps?.endAdornment && (
+          <div className={endAdornmentClasses}>
             {InputProps.endAdornment}
           </div>
         )}
       </div>
       
       {helperText && (
-        <p className={`mt-1 text-xs ${error ? 'text-red-500' : 'text-slate-400'}`}>
-          {helperText}
-        </p>
+        <p className={helperTextClasses}>{helperText}</p>
       )}
     </div>
   );

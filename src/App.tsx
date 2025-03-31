@@ -3,7 +3,10 @@ import { lazy, Suspense, useState, ComponentType } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Navigation } from './components/Navigation';
-import { AudioTrackPanel } from './components/AudioTrackPanel';
+import { AudioTrackPanel } from './features/audio/components/AudioTrackPanel';
+import { AppLoader } from './components/AppLoader';
+import { StoreInitializer } from './components/StoreInitializer';
+import { useStore } from './store';
 
 // Regular import for the Dashboard as it's likely the first page users see
 import { Dashboard } from './pages/Dashboard';
@@ -59,16 +62,17 @@ const createLazyComponent = (
 };
 
 // Lazy load other pages to reduce initial bundle size
-const MapViewLazy = createLazyComponent(() => import('./pages/MapView'), 'MapView');
-const LocationsViewLazy = createLazyComponent(() => import('./pages/LocationsView'), 'LocationsView');
-const CharactersViewLazy = createLazyComponent(() => import('./pages/CharactersView'), 'CharactersView');
-const CombatsViewLazy = createLazyComponent(() => import('./pages/CombatsView'), 'CombatsView');
-const CombatSessionViewLazy = createLazyComponent(() => import('./pages/CombatSessionView'), 'CombatSessionView');
+const MapViewLazy = createLazyComponent(() => import('./features/map/views/MapView'), 'MapView');
+const LocationsViewLazy = createLazyComponent(() => import('./features/locations/views/LocationsView'), 'LocationsView');
+const CharactersViewLazy = createLazyComponent(() => import('./features/characters/views/CharactersView'), 'CharactersView');
+const CombatsViewLazy = createLazyComponent(() => import('./features/combats/views/CombatsView'), 'CombatsView');
+const CombatSessionViewLazy = createLazyComponent(() => import('./features/combats/views/CombatSessionView'), 'CombatSessionView');
+const AssetsViewLazy = createLazyComponent(() => import('./features/assets/views/AssetsView'), 'AssetsView');
 
 // Loading component for Suspense fallback
 const LoadingComponent = () => (
-  <div className="flex justify-center items-center h-full">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-400"></div>
+  <div className="flex justify-center items-center h-full p-10">
+    <AppLoader size="lg" text="Loading content..." />
   </div>
 );
 
@@ -79,15 +83,18 @@ interface ErrorFallbackProps {
 }
 
 const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => (
-  <div className="p-3 text-center">
-    <h5 className="text-xl font-bold text-red-500 mb-2">
+  <div className="p-6 text-center bg-white/5 backdrop-blur-sm rounded-[var(--radius-lg)] border border-white/10 m-4 shadow-xl">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <h5 className="text-xl font-bold text-slate-100 mb-2">
       Something went wrong
     </h5>
-    <p className="mb-4">
+    <p className="mb-4 text-slate-300">
       {error.message}
     </p>
     <button 
-      className="px-4 py-2 bg-primary-600 text-white rounded-[var(--radius-md)] hover:bg-primary-700 transition-colors"
+      className="px-5 py-2.5 bg-indigo-600 text-white rounded-[var(--radius-md)] hover:bg-indigo-700 transition-colors shadow-md"
       onClick={resetErrorBoundary}>
       Try again
     </button>
@@ -109,12 +116,22 @@ const EnsureMarkdown = () => {
 };
 
 function App() {
+  const hasAssets = useStore((state) => state.hasAssets);
+
   return (
-    <div className="bg-gradient-to-b from-slate-950 to-slate-925 text-white min-h-screen font-[var(--font-body)]">
-      <BrowserRouter basename="/campaignorganizer">
-        <div className="flex flex-col h-screen">
+    <div className="min-h-screen font-[var(--font-body)] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-[30%] -right-[10%] w-[40%] h-[70%] bg-indigo-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-[30%] -left-[15%] w-[50%] h-[60%] bg-indigo-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-[20%] right-[10%] w-[40%] h-[70%] bg-indigo-500/5 rounded-full blur-3xl"></div>
+      </div>
+      
+      <BrowserRouter basename="/campaignorganizer/">
+        <div className="flex flex-col h-screen relative z-10">
+          <StoreInitializer />
           <Navigation />
-          <div className="flex-grow overflow-auto relative scrollbar-thin">
+          <div className="flex-grow overflow-auto relative scrollbar-thin pt-16">
             <Suspense fallback={<LoadingComponent />}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -123,6 +140,7 @@ function App() {
                 <Route path="/characters" element={<CharactersViewLazy />} />
                 <Route path="/combats" element={<CombatsViewLazy />} />
                 <Route path="/combat-session" element={<CombatSessionViewLazy />} />
+                <Route path="/assets" element={<AssetsViewLazy />} />
               </Routes>
             </Suspense>
           </div>

@@ -5,7 +5,7 @@ interface PaperProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   elevation?: number;
   variant?: 'elevation' | 'outlined';
-  sx?: Record<string, any>; // For compatibility with Material UI style props
+  sx?: Record<string, any>; 
 }
 
 const Paper = forwardRef<HTMLDivElement, PaperProps>(
@@ -17,7 +17,7 @@ const Paper = forwardRef<HTMLDivElement, PaperProps>(
     sx = {},
     ...props 
   }, ref) => {
-    // Convert Material UI style sx object to inline style object
+    
     const inlineStyle: React.CSSProperties = {};
     
     // Handle commonly used sx properties

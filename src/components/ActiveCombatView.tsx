@@ -21,6 +21,7 @@ import {
   Divider,
   Avatar
 } from './ui';
+import { Combobox } from '@headlessui/react';
 import { Combat, Character, Item } from '../store';
 import { useStore } from '../store';
 import MarkdownContent from './MarkdownContent';
@@ -97,6 +98,9 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
   const [addParticipantDialog, setAddParticipantDialog] = useState(false);
   const [newParticipantId, setNewParticipantId] = useState('');
   const [newInitiative, setNewInitiative] = useState(10);
+  
+  // Add a search state for the character dropdown
+  const [characterSearchQuery, setCharacterSearchQuery] = useState('');
 
   // Audio tracking
   const entrySoundRef = useRef<string | null>(null);
@@ -219,6 +223,15 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
       setRound(prevRound => prevRound + 1);
     }
   };
+
+  // Filter available characters for the dropdown
+  const filteredCharacters = React.useMemo(() => {
+    if (!characterSearchQuery) return characters;
+    const query = characterSearchQuery.toLowerCase();
+    return characters.filter(character => 
+      character.name.toLowerCase().includes(query)
+    );
+  }, [characters, characterSearchQuery]);
 
   // Add a new participant to combat
   const handleAddParticipant = () => {
@@ -343,326 +356,320 @@ export const ActiveCombatView: React.FC<ActiveCombatViewProps> = ({ combat, onCl
     onClose();
   };
 
+  // Replace the character selection dropdown in the Add Participant Dialog with Combobox
+  const renderCharacterDropdown = () => (
+    <div className="w-full mb-4">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Character
+      </label>
+      <Combobox 
+        value={newParticipantId}
+        onChange={(characterId: string) => {
+          setNewParticipantId(characterId);
+        }}
+      >
+        <div className="relative w-full">
+          <Combobox.Input
+            className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            onChange={(e) => setCharacterSearchQuery(e.target.value)}
+            displayValue={(characterId: string) => {
+              if (!characterId) return 'Select a character';
+              const character = characters.find(c => c.id === characterId);
+              return character ? character.name : 'Select a character';
+            }}
+          />
+          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <span className="w-5 h-5 text-gray-400" aria-hidden="true">▼</span>
+          </Combobox.Button>
+        </div>
+        <Combobox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700">
+          {filteredCharacters.map((character) => (
+            <Combobox.Option
+              key={character.id}
+              value={character.id}
+              className={({ active }) =>
+                `cursor-default select-none relative py-2 px-4 ${
+                  active ? 'bg-blue-600 text-white' : 'text-gray-900 dark:text-white'
+                }`
+              }
+            >
+              <div className="flex justify-between items-center">
+                <span>{character.name}</span>
+                <span className={`text-sm ${character.type === 'player' ? 'text-green-500' : 'text-red-500'}`}>
+                  {character.type === 'player' ? 'Player' : 'Enemy'}
+                </span>
+              </div>
+            </Combobox.Option>
+          ))}
+          {filteredCharacters.length === 0 && (
+            <div className="py-2 px-4 text-gray-500">No characters found</div>
+          )}
+        </Combobox.Options>
+      </Combobox>
+    </div>
+  );
+
   return (
-    <Box className="h-full w-full flex flex-col overflow-hidden relative bg-gray-900">
-      {/* Semi-transparent overlay for background image */}
-      <Box className="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 z-0" />
-      
-      {/* Header with combat info */}
-      <Paper className="p-4 mb-2 flex justify-between items-center bg-gray-800 relative z-10">
+    <Box className="h-full flex flex-col">
+      {/* Header with combat name and back button */}
+      <Box className="bg-gray-800 text-white p-3 flex justify-between items-center">
         <Box className="flex items-center">
-          <IconButton onClick={handleEndCombat} className="mr-2">
+          <IconButton onClick={onClose} size="small" className="mr-2 text-white">
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h5">{combat.name}</Typography>
-          <Chip label={`Round: ${round}`} color="primary" className="ml-3" />
+          <Typography variant="h6">{combat.name}</Typography>
         </Box>
-        
-        <Box className="flex items-center gap-2">
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={() => setAddParticipantDialog(true)}
-          >
-            Add Participant
-          </Button>
-          <Button 
-            variant="contained" 
-            color="secondary"
-            onClick={handleEndCombat}
-          >
-            End Combat
-          </Button>
+        <Box>
+          <Typography variant="body2">Round: {round}</Typography>
         </Box>
-      </Paper>
+      </Box>
       
-      {/* Main content area */}
-      <Box className="flex flex-1 overflow-hidden gap-2 p-2 relative z-10">
-        {/* Initiative order list */}
-        <Paper className="w-72 overflow-auto bg-gray-800 p-2">
-          <Typography variant="h6" className="mb-2 px-2">Initiative Order</Typography>
+      {/* Main Content */}
+      <Box className="flex flex-grow overflow-hidden">
+        {/* Left sidebar with initiative order */}
+        <Box className="w-1/4 bg-gray-100 dark:bg-gray-700 overflow-y-auto">
+          <Box className="p-3 bg-gray-200 dark:bg-gray-600 flex justify-between items-center">
+            <Typography variant="subtitle1" className="font-bold">
+              Initiative Order
+            </Typography>
+            <Button
+              variant="contained" 
+              color="primary"
+              size="small"
+              onClick={() => setAddParticipantDialog(true)}
+            >
+              Add
+            </Button>
+          </Box>
           
           <List>
             {participants.map((participant, index) => (
-              <ListItem 
+              <div 
                 key={participant.id}
-                className={`mb-1 rounded cursor-pointer ${
-                  index === currentTurnIndex 
-                    ? 'bg-amber-800 bg-opacity-40 border-l-4 border-amber-500' 
-                    : participant.id === selectedParticipantId 
-                      ? 'bg-blue-900 bg-opacity-30 border-l-4 border-blue-500'
-                      : 'border-l-4 border-transparent'
-                }`}
                 onClick={() => handleSelectParticipant(participant.id)}
-                secondaryAction={
-                  <IconButton 
-                    size="small" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveParticipant(participant.id);
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
+                className={`
+                  py-2 px-3 cursor-pointer
+                  ${index === currentTurnIndex ? 'bg-blue-100 dark:bg-blue-800' : ''}
+                  ${participant.isDefeated ? 'opacity-50 line-through' : ''}
+                `}
               >
-                <ListItemIcon>
-                  {participant.isPlayerCharacter ? 
-                    <PersonIcon color="primary" /> : 
-                    <SportsKabaddiIcon color="error" />
-                  }
-                </ListItemIcon>
-                
-                <ListItemText 
-                  primary={
-                    <Box className="flex items-center justify-between">
-                      <Typography variant="body1" className={participant.isDefeated ? "line-through text-gray-500" : ""}>
-                        {participant.character.name}
-                      </Typography>
-                      <Box className="flex items-center">
-                        <Badge 
-                          content={participant.initiative} 
-                          color="primary"
-                          className="mr-1"
-                        />
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingParticipantId(participant.id === editingParticipantId ? null : participant.id);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography variant="caption" component="div">
+                <Box className="flex items-center w-full">
+                  <Avatar className={`
+                    ${participant.isPlayerCharacter ? 'bg-green-500' : 'bg-red-500'}
+                    ${participant.isDefeated ? 'opacity-50' : ''}
+                  `}>
+                    {participant.isPlayerCharacter ? <PersonIcon /> : <SportsKabaddiIcon />}
+                  </Avatar>
+                  <Box className="ml-3 flex-grow">
+                    <Typography variant="body1" className="font-semibold">
+                      {participant.character.name}
+                    </Typography>
+                    <Box className="flex justify-between items-center">
+                      <Typography variant="body2">
                         HP: {participant.currentHp}/{participant.maxHp}
                       </Typography>
-                      
-                      {editingParticipantId === participant.id && (
-                        <Box className="mt-2 flex flex-col gap-2">
-                          <TextField
-                            label="Initiative"
-                            size="small"
-                            type="number"
-                            value={participant.initiative}
-                            onChange={(e) => handleUpdateInitiative(participant.id, parseInt(e.target.value) || 0)}
-                            fullWidth
-                          />
-                          <TextField
-                            label="Current HP"
-                            size="small"
-                            type="number"
-                            value={participant.currentHp}
-                            onChange={(e) => handleUpdateHp(participant.id, parseInt(e.target.value) || 0)}
-                            fullWidth
-                          />
-                          <TextField
-                            label="Notes"
-                            size="small"
-                            multiline
-                            rows={2}
-                            value={participant.notes}
-                            onChange={(e) => handleUpdateNotes(participant.id, e.target.value)}
-                            fullWidth
-                          />
-                        </Box>
-                      )}
+                      <Chip label={`Init: ${participant.initiative}`} size="small" />
                     </Box>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
-        
-        {/* Active participant details */}
-        <Paper className="flex-1 p-4 bg-gray-800 flex flex-col overflow-auto">
-          {selectedParticipant ? (
-            <>
-              <Box className="flex justify-between items-center mb-4">
-                <Box>
-                  <Typography variant="h5">
-                    {selectedParticipant.id === currentParticipant?.id 
-                      ? `Current Turn: ${selectedParticipant.character.name}`
-                      : selectedParticipant.character.name
-                    }
-                  </Typography>
-                  {selectedParticipant.id !== currentParticipant?.id && (
-                    <Typography variant="caption" className="text-gray-400">
-                      Viewing details - not the active turn
-                    </Typography>
-                  )}
+                  </Box>
                 </Box>
-                <Button 
-                  variant="contained" 
-                  color="secondary"
-                  endIcon={<ArrowForwardIcon />}
-                  onClick={nextTurn}
-                >
-                  Next Turn
-                </Button>
+              </div>
+            ))}
+            {participants.length === 0 && (
+              <Box className="p-4 text-center text-gray-500">
+                <Typography>No participants yet. Add some to start combat.</Typography>
               </Box>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Card className="bg-gray-900 h-full">
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Character Details
-                      </Typography>
-                      <Typography variant="body1">
-                        Type: {selectedParticipant.character.type.toUpperCase()}
-                      </Typography>
-                      <Typography variant="body1" className="mb-2">
-                        HP: {selectedParticipant.currentHp}/{selectedParticipant.maxHp}
-                      </Typography>
-                      
-                      <Divider className="my-2" />
-                      
-                      <Typography variant="subtitle2" gutterBottom>
-                        Description:
-                      </Typography>
-                      <Box className="p-2 bg-gray-800 rounded">
-                        <MarkdownContent content={selectedParticipant.character.description || "*No description provided*"} />
-                      </Box>
-                      
-                      {/* HP adjustment controls */}
-                      <Box className="mt-4">
-                        <Typography variant="subtitle2" gutterBottom>Adjust HP</Typography>
-                        <Box className="flex gap-1">
-                          <Button 
-                            variant="outlined" 
-                            size="small"
-                            onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp - 1)}
-                          >
-                            -1
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            size="small"
-                            onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp - 5)}
-                          >
-                            -5
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            color="primary"
-                            size="small"
-                            onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp + 1)}
-                          >
-                            +1
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            color="primary"
-                            size="small"
-                            onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp + 5)}
-                          >
-                            +5
-                          </Button>
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
+            )}
+          </List>
+        </Box>
+        
+        {/* Right content area */}
+        <Box className="flex-grow p-4 overflow-y-auto">
+          {selectedParticipant ? (
+            <Card>
+              <CardContent>
+                <Box className="flex justify-between items-start">
+                  <Box>
+                    <Typography variant="h5" className="font-bold">
+                      {selectedParticipant.character.name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {selectedParticipant.isPlayerCharacter ? 'Player Character' : 'Enemy'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <IconButton 
+                      onClick={() => setEditingParticipantId(selectedParticipant.id)}
+                      size="small"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
                 
-                <Grid item xs={12} md={6}>
-                  <Card className="bg-gray-900 h-full">
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Combat Notes
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={8}
-                        value={selectedParticipant.notes}
-                        onChange={(e) => handleUpdateNotes(selectedParticipant.id, e.target.value)}
-                        placeholder="Add notes for this character..."
-                        variant="outlined"
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <Divider className="my-3" />
                 
-                {selectedParticipant.character.inventory && selectedParticipant.character.inventory.length > 0 && (
-                  <Grid item xs={12}>
-                    <Card className="bg-gray-900">
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          Inventory
-                        </Typography>
-                        <List dense>
-                          {selectedParticipant.character.inventory.map(item => (
-                            <ListItem key={item.id}>
-                              <ListItemText 
-                                primary={item.name} 
-                                secondary={item.description} 
-                              />
-                              <Typography variant="body2">
-                                Qty: {item.quantity}
-                              </Typography>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </CardContent>
-                    </Card>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="subtitle2">Hit Points</Typography>
+                    <Typography variant="h6">
+                      {selectedParticipant.currentHp} / {selectedParticipant.maxHp}
+                    </Typography>
+                    {/* HP adjustment buttons */}
+                    <Box className="flex gap-1 mt-2">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="error"
+                        onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp - 1)}
+                      >
+                        -1
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="error"
+                        onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp - 5)}
+                      >
+                        -5
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="success"
+                        onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp + 1)}
+                      >
+                        +1
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="success"
+                        onClick={() => handleUpdateHp(selectedParticipant.id, selectedParticipant.currentHp + 5)}
+                      >
+                        +5
+                      </Button>
+                    </Box>
                   </Grid>
-                )}
-              </Grid>
-            </>
+                  <Grid item xs={6}>
+                    <Typography variant="subtitle2">Initiative</Typography>
+                    <Typography variant="h6">{selectedParticipant.initiative}</Typography>
+                    {/* Initiative adjustment buttons */}
+                    <Box className="flex gap-1 mt-2">
+                      <Button 
+                        size="small" 
+                        variant="outlined"
+                        onClick={() => handleUpdateInitiative(selectedParticipant.id, selectedParticipant.initiative - 1)}
+                      >
+                        -1
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined"
+                        onClick={() => handleUpdateInitiative(selectedParticipant.id, selectedParticipant.initiative + 1)}
+                      >
+                        +1
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+                
+                <Box className="mt-4">
+                  <Typography variant="subtitle2">Notes</Typography>
+                  <TextField
+                    multiline
+                    rows={3}
+                    fullWidth
+                    value={selectedParticipant.notes}
+                    onChange={(e) => handleUpdateNotes(selectedParticipant.id, e.target.value)}
+                    placeholder="Add combat notes here..."
+                    variant="outlined"
+                    size="small"
+                    className="mt-1"
+                  />
+                </Box>
+                
+                <Box className="mt-4 flex justify-between">
+                  <Button 
+                    variant="outlined" 
+                    color="error"
+                    onClick={() => handleRemoveParticipant(selectedParticipant.id)}
+                  >
+                    Remove from Combat
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    color={selectedParticipant.isDefeated ? "success" : "error"}
+                    onClick={() => {
+                      setParticipants(participants.map(p => 
+                        p.id === selectedParticipant.id 
+                          ? { ...p, isDefeated: !p.isDefeated }
+                          : p
+                      ));
+                    }}
+                  >
+                    {selectedParticipant.isDefeated ? "Revive" : "Defeat"}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           ) : (
-            <Box className="flex justify-center items-center h-full">
-              <Typography variant="h6">No participants in combat</Typography>
-            </Box>
+            <Paper className="p-4 text-center">
+              <Typography variant="body1">
+                Select a participant from the initiative order to view details.
+              </Typography>
+            </Paper>
           )}
-        </Paper>
+        </Box>
       </Box>
       
-      {/* Add participant dialog */}
-      <Dialog 
-        open={addParticipantDialog} 
+      {/* Footer with controls */}
+      <Box className="bg-gray-200 dark:bg-gray-700 p-3 flex justify-between items-center">
+        <Button
+          variant="contained"
+          color="error"
+          onClick={handleEndCombat}
+        >
+          End Combat
+        </Button>
+        
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={nextTurn}
+          disabled={participants.length === 0}
+          endIcon={<ArrowForwardIcon />}
+        >
+          Next Turn
+        </Button>
+      </Box>
+      
+      {/* Add Participant Dialog */}
+      <Dialog
+        open={addParticipantDialog}
         onClose={() => setAddParticipantDialog(false)}
       >
-        <DialogTitle>Add Combat Participant</DialogTitle>
+        <DialogTitle>Add Participant to Combat</DialogTitle>
         <DialogContent>
-          <Box className="mt-2 flex flex-col gap-3">
-            <Box className="mb-2">
-              <Typography variant="subtitle2" gutterBottom>Select Character:</Typography>
-              <select 
-                className="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded"
-                value={newParticipantId}
-                onChange={(e) => setNewParticipantId(e.target.value)}
-              >
-                <option value="">-- Select a character --</option>
-                {characters.map(character => (
-                  <option key={character.id} value={character.id}>
-                    {character.name} ({character.type}) - HP: {character.hp}
-                  </option>
-                ))}
-              </select>
-            </Box>
+          <Box className="pt-2 space-y-4">
+            {renderCharacterDropdown()}
             
             <TextField
               label="Initiative"
               type="number"
+              fullWidth
               value={newInitiative}
               onChange={(e) => setNewInitiative(parseInt(e.target.value) || 0)}
-              fullWidth
-              helperText="Higher initiative goes first"
+              InputProps={{ inputProps: { min: 0 } }}
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddParticipantDialog(false)}>Cancel</Button>
+          <Button onClick={() => setAddParticipantDialog(false)}>
+            Cancel
+          </Button>
           <Button 
             onClick={handleAddParticipant} 
-            color="primary" 
+            color="primary"
             variant="contained"
             disabled={!newParticipantId}
           >

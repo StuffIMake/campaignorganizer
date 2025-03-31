@@ -45,6 +45,7 @@ import {
   HelpIcon,
   ClearIcon
 } from './Icons';
+import SearchableDropdown from './SearchableDropdown';
 
 export {
   Alert,
@@ -112,5 +113,6 @@ export {
   SearchIcon,
   AddIcon,
   HelpIcon,
-  ClearIcon
+  ClearIcon,
+  SearchableDropdown
 }; 

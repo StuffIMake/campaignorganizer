@@ -5,11 +5,11 @@
 export function preloadRouteComponents(): void {
   // Pre-cache these important route components by importing them
   // but don't actually wait for them to load
-  import('./pages/MapView');
-  import('./pages/LocationsView');
-  import('./pages/CharactersView');
-  import('./pages/CombatsView');
-  import('./pages/CombatSessionView');
+  import('./features/map/views/MapView');
+  import('./features/locations/views/LocationsView');
+  import('./features/characters/views/CharactersView');
+  import('./features/combats/views/CombatsView');
+  import('./features/combats/views/CombatSessionView');
   
   console.log('Preloading critical components...');
 } 

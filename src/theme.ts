@@ -3,36 +3,36 @@
 
 // Define theme colors for reference and consistency
 export const themeColors = {
-  // Primary colors
+  // Primary colors - updated with more vibrant purple/blue gradient
   primary: {
-    main: '#7c4dff',
-    light: '#b47cff',
-    dark: '#3f1dcb',
+    main: '#6366f1', // Indigo 500
+    light: '#818cf8', // Indigo 400
+    dark: '#4f46e5', // Indigo 600
   },
-  // Secondary colors
+  // Secondary colors - warmer accent color
   secondary: {
-    main: '#ff9800',
-    light: '#ffac33',
-    dark: '#c66900',
+    main: '#f59e0b', // Amber 500
+    light: '#fbbf24', // Amber 400
+    dark: '#d97706', // Amber 600
   },
-  // Background colors
+  // Background colors - darker and more sophisticated
   background: {
-    default: '#1a1a1a',
-    paper: '#2d2d2d',
-    light: '#3a3a3a',
+    default: '#0f172a', // Slate 900
+    paper: '#1e293b', // Slate 800
+    light: '#334155', // Slate 700
   },
-  // Text colors
+  // Text colors - more contrast for improved readability
   text: {
-    primary: '#ffffff',
-    secondary: '#b0b0b0',
-    disabled: '#6c6c6c',
+    primary: '#f8fafc', // Slate 50
+    secondary: '#cbd5e1', // Slate 300
+    disabled: '#64748b', // Slate 500
   },
-  // Status colors
+  // Status colors - brighter and more distinct
   status: {
-    success: '#4caf50',
-    warning: '#ff9800',
-    error: '#f44336',
-    info: '#2196f3',
+    success: '#10b981', // Emerald 500
+    warning: '#f59e0b', // Amber 500
+    error: '#ef4444',   // Red 500
+    info: '#0ea5e9',    // Sky 500
   }
 };
 
@@ -48,9 +48,9 @@ export const breakpoints = {
 // Define spacing for consistent use
 export const spacing = (space: number) => `${space * 0.25}rem`;
 
-// Define font settings
+// Define font settings - update to modern font stack
 export const typography = {
-  fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+  fontFamily: '"Inter", "SF Pro Display", "Segoe UI", "Roboto", sans-serif',
   fontSizes: {
     xs: '0.75rem',
     sm: '0.875rem',

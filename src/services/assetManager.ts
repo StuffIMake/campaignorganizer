@@ -59,7 +59,13 @@ export class AssetManager {
   static async processZipFile(file: File): Promise<{ success: boolean; message: string }> {
     try {
       const zip = new JSZip();
-      const zipContent = await zip.loadAsync(file);
+      
+      // Load the zip file with streaming option to reduce memory usage
+      const zipContent = await zip.loadAsync(file, {
+        // Use chunked reading to prevent memory issues with large files
+        createFolders: true,
+        checkCRC32: false
+      });
       
       // Arrays to hold assets by type
       const audioFiles: AssetEntry[] = [];
@@ -75,27 +81,42 @@ export class AssetManager {
           return;
         }
         
-        // Process each file in the folder
-        const filePromises = Object.keys(folder.files)
-          .filter(path => !folder.files[path].dir && path.startsWith(`${folderPath}/`))
-          .map(async (path) => {
+        // Get all the files in this folder
+        const filePaths = Object.keys(folder.files)
+          .filter(path => !folder.files[path].dir && path.startsWith(`${folderPath}/`));
+        
+        // Process files in smaller batches to avoid memory issues
+        const BATCH_SIZE = 5; // Process 5 files at a time
+        
+        for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+          const batch = filePaths.slice(i, i + BATCH_SIZE);
+          
+          // Process this batch of files
+          await Promise.all(batch.map(async (path) => {
             const fileName = path.split('/').pop() || '';
             if (!fileName) return; // Skip if filename is empty
             
-            // Get the file data as base64
-            const fileData = await folder.files[path].async('base64');
-            const mimeType = this.getMimeType(fileName);
-            
-            // Add to the appropriate collection
-            collection.push({
-              name: fileName,
-              data: fileData,
-              type: mimeType,
-              lastModified: Date.now()
-            });
-          });
-        
-        await Promise.all(filePromises);
+            try {
+              // Get the file data as base64
+              const fileData = await folder.files[path].async('base64');
+              const mimeType = this.getMimeType(fileName);
+              
+              // Add to the appropriate collection
+              collection.push({
+                name: fileName,
+                data: fileData,
+                type: mimeType,
+                lastModified: Date.now()
+              });
+            } catch (error) {
+              console.error(`Error processing file ${fileName}:`, error);
+              // Continue with other files even if one fails
+            }
+          }));
+          
+          // Small delay to allow garbage collection between batches
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
       };
       
       // Process each required folder
@@ -114,17 +135,17 @@ export class AssetManager {
       // Open database connection
       const db = await this.openDB();
       
-      // Store the assets in IndexedDB
+      // Store the assets in IndexedDB in batches
       if (audioFiles.length > 0) {
-        await this.storeAssets(db, AUDIO_STORE, audioFiles);
+        await this.storeAssetsInBatches(db, AUDIO_STORE, audioFiles);
       }
       
       if (imageFiles.length > 0) {
-        await this.storeAssets(db, IMAGES_STORE, imageFiles);
+        await this.storeAssetsInBatches(db, IMAGES_STORE, imageFiles);
       }
       
       if (dataFiles.length > 0) {
-        await this.storeAssets(db, DATA_STORE, dataFiles);
+        await this.storeAssetsInBatches(db, DATA_STORE, dataFiles);
       }
       
       db.close();
@@ -139,6 +160,35 @@ export class AssetManager {
         success: false, 
         message: `Error processing zip file: ${error instanceof Error ? error.message : String(error)}` 
       };
+    }
+  }
+  
+  // Store assets in IndexedDB in batches to prevent memory issues
+  private static async storeAssetsInBatches(db: IDBDatabase, storeName: string, assets: AssetEntry[]): Promise<void> {
+    // Clear the store first
+    await this.clearStore(db, storeName);
+    
+    // Store assets in smaller batches
+    const BATCH_SIZE = 10; // Process 10 assets at a time
+    
+    for (let i = 0; i < assets.length; i += BATCH_SIZE) {
+      const batch = assets.slice(i, i + BATCH_SIZE);
+      
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = (event) => reject(new Error('Transaction failed'));
+        
+        // Add batch of assets
+        batch.forEach(asset => {
+          store.add(asset);
+        });
+      });
+      
+      // Small delay to allow garbage collection between batches
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
   }
   

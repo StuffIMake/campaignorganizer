@@ -1,185 +1,275 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'text' | 'contained' | 'outlined' | 'ghost' | 'glass';
-  size?: 'small' | 'medium' | 'large' | 'icon';
-  color?: 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning' | 'default';
-  fullWidth?: boolean;
+// Button variants
+export type ButtonVariant = 
+  | 'contained' 
+  | 'outlined' 
+  | 'text' 
+  | 'glass'
+  | 'gradient';
+
+// Button colors
+export type ButtonColor = 
+  | 'primary' 
+  | 'secondary' 
+  | 'default'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info';
+
+// Button sizes
+export type ButtonSize = 
+  | 'small' 
+  | 'medium' 
+  | 'large';
+
+// Button props interface
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  color?: ButtonColor;
+  size?: ButtonSize;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
-  isLoading?: boolean;
+  fullWidth?: boolean;
+  loading?: boolean;
   loadingText?: string;
-  sx?: Record<string, any>;
+  disableElevation?: boolean;
+  disableRipple?: boolean;
+  href?: string;
+  rounded?: boolean;
 }
 
-const Button: React.FC<ButtonProps> = ({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
-  variant = 'primary',
+  variant = 'contained',
   color = 'primary',
   size = 'medium',
-  fullWidth = false,
+  disabled = false,
+  className = '',
   startIcon,
   endIcon,
-  isLoading = false,
+  fullWidth = false,
+  loading = false,
   loadingText,
-  disabled,
-  className = '',
-  sx = {},
+  disableElevation = false,
+  disableRipple = false,
+  type = 'button',
+  rounded = false,
+  href,
   ...props
-}) => {
-  // Base classes for all buttons
-  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 select-none';
+}, ref) => {
+  // Base classes
+  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-slate-900';
   
-  // Map Material UI variant names to our internal variants
-  let mappedVariant = variant;
-  if (variant === 'contained') mappedVariant = 'primary';
-  if (variant === 'outlined') mappedVariant = 'outline';
-  
-  // Determine border radius based on size
-  const radiusClasses = size === 'icon' ? 'rounded-full' : 'rounded-md';
-  
-  // Classes based on color
-  const colorClasses = {
-    primary: 'bg-primary-600 hover:bg-primary-700 focus:bg-primary-700 active:bg-primary-800 text-white border border-transparent focus-visible:ring-primary-500',
-    secondary: 'bg-secondary-600 hover:bg-secondary-700 focus:bg-secondary-700 active:bg-secondary-800 text-white border border-transparent focus-visible:ring-secondary-500',
-    success: 'bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-800 text-white border border-transparent focus-visible:ring-green-500',
-    error: 'bg-red-600 hover:bg-red-700 focus:bg-red-700 active:bg-red-800 text-white border border-transparent focus-visible:ring-red-500',
-    info: 'bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 text-white border border-transparent focus-visible:ring-blue-500',
-    warning: 'bg-amber-600 hover:bg-amber-700 focus:bg-amber-700 active:bg-amber-800 text-white border border-transparent focus-visible:ring-amber-500',
-    default: 'bg-slate-700 hover:bg-slate-800 focus:bg-slate-800 active:bg-slate-900 text-white border border-transparent focus-visible:ring-slate-500'
-  };
-  
-  const outlineColorClasses = {
-    primary: 'border border-primary-600/70 bg-transparent hover:bg-primary-100/10 focus:bg-primary-100/10 active:bg-primary-100/20 text-primary-500 focus-visible:ring-primary-500',
-    secondary: 'border border-secondary-600/70 bg-transparent hover:bg-secondary-100/10 focus:bg-secondary-100/10 active:bg-secondary-100/20 text-secondary-500 focus-visible:ring-secondary-500',
-    success: 'border border-green-600/70 bg-transparent hover:bg-green-100/10 focus:bg-green-100/10 active:bg-green-100/20 text-green-500 focus-visible:ring-green-500',
-    error: 'border border-red-600/70 bg-transparent hover:bg-red-100/10 focus:bg-red-100/10 active:bg-red-100/20 text-red-500 focus-visible:ring-red-500',
-    info: 'border border-blue-600/70 bg-transparent hover:bg-blue-100/10 focus:bg-blue-100/10 active:bg-blue-100/20 text-blue-500 focus-visible:ring-blue-500',
-    warning: 'border border-amber-600/70 bg-transparent hover:bg-amber-100/10 focus:bg-amber-100/10 active:bg-amber-100/20 text-amber-500 focus-visible:ring-amber-500',
-    default: 'border border-slate-600 bg-transparent hover:bg-slate-100/10 focus:bg-slate-100/10 active:bg-slate-100/20 text-slate-400 focus-visible:ring-slate-500',
-  };
-  
-  const ghostColorClasses = {
-    primary: 'text-primary-600 hover:bg-primary-100/10 focus:bg-primary-100/10 active:bg-primary-100/20 bg-transparent border border-transparent focus-visible:ring-primary-500',
-    secondary: 'text-secondary-600 hover:bg-secondary-100/10 focus:bg-secondary-100/10 active:bg-secondary-100/20 bg-transparent border border-transparent focus-visible:ring-secondary-500',
-    success: 'text-green-600 hover:bg-green-100/10 focus:bg-green-100/10 active:bg-green-100/20 bg-transparent border border-transparent focus-visible:ring-green-500',
-    error: 'text-red-600 hover:bg-red-100/10 focus:bg-red-100/10 active:bg-red-100/20 bg-transparent border border-transparent focus-visible:ring-red-500',
-    info: 'text-blue-600 hover:bg-blue-100/10 focus:bg-blue-100/10 active:bg-blue-100/20 bg-transparent border border-transparent focus-visible:ring-blue-500',
-    warning: 'text-amber-600 hover:bg-amber-100/10 focus:bg-amber-100/10 active:bg-amber-100/20 bg-transparent border border-transparent focus-visible:ring-amber-500',
-    default: 'text-slate-400 hover:bg-slate-800 focus:bg-slate-800 active:bg-slate-700 bg-transparent border border-transparent focus-visible:ring-slate-500',
-  };
-  
-  const glassColorClasses = {
-    primary: 'bg-primary-500/20 backdrop-filter backdrop-blur-sm text-primary-700 dark:text-primary-300 hover:bg-primary-500/30 focus:bg-primary-500/30 active:bg-primary-500/40 border border-primary-500/30 dark:border-primary-700/30 focus-visible:ring-primary-500',
-    secondary: 'bg-secondary-500/20 backdrop-filter backdrop-blur-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-500/30 focus:bg-secondary-500/30 active:bg-secondary-500/40 border border-secondary-500/30 dark:border-secondary-700/30 focus-visible:ring-secondary-500',
-    success: 'bg-green-500/20 backdrop-filter backdrop-blur-sm text-green-700 dark:text-green-300 hover:bg-green-500/30 focus:bg-green-500/30 active:bg-green-500/40 border border-green-500/30 dark:border-green-700/30 focus-visible:ring-green-500',
-    error: 'bg-red-500/20 backdrop-filter backdrop-blur-sm text-red-700 dark:text-red-300 hover:bg-red-500/30 focus:bg-red-500/30 active:bg-red-500/40 border border-red-500/30 dark:border-red-700/30 focus-visible:ring-red-500',
-    info: 'bg-blue-500/20 backdrop-filter backdrop-blur-sm text-blue-700 dark:text-blue-300 hover:bg-blue-500/30 focus:bg-blue-500/30 active:bg-blue-500/40 border border-blue-500/30 dark:border-blue-700/30 focus-visible:ring-blue-500',
-    warning: 'bg-amber-500/20 backdrop-filter backdrop-blur-sm text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 focus:bg-amber-500/30 active:bg-amber-500/40 border border-amber-500/30 dark:border-amber-700/30 focus-visible:ring-amber-500',
-    default: 'bg-white/10 backdrop-filter backdrop-blur-sm text-slate-700 dark:text-slate-300 hover:bg-white/20 focus:bg-white/20 active:bg-white/30 border border-white/30 dark:border-slate-700/30 focus-visible:ring-slate-500',
-  };
-  
-  // Classes based on variant
-  const variantClasses = {
-    primary: colorClasses[color],
-    secondary: colorClasses.secondary,
-    outline: outlineColorClasses[color],
-    danger: colorClasses.error,
-    text: 'bg-transparent hover:bg-slate-100/10 focus:bg-slate-100/10 active:bg-slate-100/20 text-primary-500 border border-transparent focus-visible:ring-primary-500',
-    contained: colorClasses[color],
-    outlined: outlineColorClasses[color],
-    ghost: ghostColorClasses[color],
-    glass: glassColorClasses[color]
-  };
-  
-  // Classes based on size
+  // Size classes
   const sizeClasses = {
-    small: 'px-3 py-1.5 text-xs gap-1.5',
-    medium: 'px-4 py-2 text-sm gap-2',
-    large: 'px-5 py-2.5 text-base gap-2',
-    icon: 'p-2'
-  };
+    small: 'px-3 py-1.5 text-xs',
+    medium: 'px-4 py-2 text-sm',
+    large: 'px-6 py-2.5 text-base'
+  }[size];
   
-  // Disabled and loading state classes
-  const stateClasses = (disabled || isLoading) 
-    ? 'opacity-70 cursor-not-allowed pointer-events-none' 
-    : 'cursor-pointer';
+  // Color and variant classes
+  let colorAndVariantClasses = '';
   
-  // Full width class
+  // Contained button styling
+  if (variant === 'contained') {
+    if (color === 'primary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-indigo-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'secondary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-amber-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'success') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-emerald-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'warning') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-amber-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'error') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-red-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'info') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-sky-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white shadow-md hover:shadow-lg';
+    } else {
+      colorAndVariantClasses = disabled 
+        ? 'bg-slate-600/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white shadow-md hover:shadow-lg';
+    }
+  }
+  
+  // Outlined button styling
+  else if (variant === 'outlined') {
+    if (color === 'primary') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-indigo-500/30 text-indigo-500/40 cursor-not-allowed'
+        : 'border border-indigo-500/70 hover:border-indigo-500 text-indigo-500 hover:bg-indigo-500/10 active:bg-indigo-500/20';
+    } else if (color === 'secondary') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-amber-500/30 text-amber-500/40 cursor-not-allowed'
+        : 'border border-amber-500/70 hover:border-amber-500 text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20';
+    } else if (color === 'success') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-emerald-500/30 text-emerald-500/40 cursor-not-allowed'
+        : 'border border-emerald-500/70 hover:border-emerald-500 text-emerald-500 hover:bg-emerald-500/10 active:bg-emerald-500/20';
+    } else if (color === 'warning') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-amber-500/30 text-amber-500/40 cursor-not-allowed'
+        : 'border border-amber-500/70 hover:border-amber-500 text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20';
+    } else if (color === 'error') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-red-500/30 text-red-500/40 cursor-not-allowed'
+        : 'border border-red-500/70 hover:border-red-500 text-red-500 hover:bg-red-500/10 active:bg-red-500/20';
+    } else if (color === 'info') {
+      colorAndVariantClasses = disabled 
+        ? 'border border-sky-500/30 text-sky-500/40 cursor-not-allowed'
+        : 'border border-sky-500/70 hover:border-sky-500 text-sky-500 hover:bg-sky-500/10 active:bg-sky-500/20';
+    } else {
+      colorAndVariantClasses = disabled 
+        ? 'border border-slate-400/30 text-slate-400/50 cursor-not-allowed'
+        : 'border border-slate-400/70 hover:border-slate-300 text-slate-300 hover:bg-slate-300/10 active:bg-slate-300/20';
+    }
+  }
+  
+  // Text button styling
+  else if (variant === 'text') {
+    if (color === 'primary') {
+      colorAndVariantClasses = disabled 
+        ? 'text-indigo-500/40 cursor-not-allowed'
+        : 'text-indigo-500 hover:bg-indigo-500/10 active:bg-indigo-500/20';
+    } else if (color === 'secondary') {
+      colorAndVariantClasses = disabled 
+        ? 'text-amber-500/40 cursor-not-allowed'
+        : 'text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20';
+    } else if (color === 'success') {
+      colorAndVariantClasses = disabled 
+        ? 'text-emerald-500/40 cursor-not-allowed'
+        : 'text-emerald-500 hover:bg-emerald-500/10 active:bg-emerald-500/20';
+    } else if (color === 'warning') {
+      colorAndVariantClasses = disabled 
+        ? 'text-amber-500/40 cursor-not-allowed'
+        : 'text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20';
+    } else if (color === 'error') {
+      colorAndVariantClasses = disabled 
+        ? 'text-red-500/40 cursor-not-allowed'
+        : 'text-red-500 hover:bg-red-500/10 active:bg-red-500/20';
+    } else if (color === 'info') {
+      colorAndVariantClasses = disabled 
+        ? 'text-sky-500/40 cursor-not-allowed'
+        : 'text-sky-500 hover:bg-sky-500/10 active:bg-sky-500/20';
+    } else {
+      colorAndVariantClasses = disabled 
+        ? 'text-slate-400/50 cursor-not-allowed'
+        : 'text-slate-300 hover:bg-slate-300/10 active:bg-slate-300/20';
+    }
+  }
+  
+  // Glass button styling
+  else if (variant === 'glass') {
+    if (color === 'primary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-indigo-500/10 text-indigo-500/40 border border-white/5 backdrop-blur-md cursor-not-allowed'
+        : 'bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 text-indigo-400 border border-white/10 hover:border-white/20 backdrop-blur-md';
+    } else if (color === 'secondary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-amber-500/10 text-amber-500/40 border border-white/5 backdrop-blur-md cursor-not-allowed'
+        : 'bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-white/10 hover:border-white/20 backdrop-blur-md';
+    } else {
+      colorAndVariantClasses = disabled 
+        ? 'bg-white/5 text-white/30 border border-white/5 backdrop-blur-md cursor-not-allowed'
+        : 'bg-white/5 hover:bg-white/10 active:bg-white/15 text-white/80 border border-white/10 hover:border-white/20 backdrop-blur-md';
+    }
+  }
+  
+  // Gradient button styling
+  else if (variant === 'gradient') {
+    if (color === 'primary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg';
+    } else if (color === 'secondary') {
+      colorAndVariantClasses = disabled 
+        ? 'bg-gradient-to-r from-amber-500/40 to-orange-500/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md hover:shadow-lg';
+    } else {
+      colorAndVariantClasses = disabled 
+        ? 'bg-gradient-to-r from-slate-700/40 to-slate-800/40 text-white/60 shadow-none cursor-not-allowed'
+        : 'bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-md hover:shadow-lg';
+    }
+  }
+  
+  // Round or normal corner radius
+  const roundedClass = rounded ? 'rounded-full' : 'rounded-[var(--radius-md)]';
+  
+  // Handle elevation
+  const elevationClass = disableElevation ? 'shadow-none hover:shadow-none' : '';
+  
+  // Full width styling
   const widthClass = fullWidth ? 'w-full' : '';
   
-  // Convert sx props to inline styles
-  const inlineStyle: React.CSSProperties = {};
+  // Combine classes
+  const classes = `
+    ${baseClasses}
+    ${sizeClasses}
+    ${colorAndVariantClasses}
+    ${roundedClass}
+    ${elevationClass}
+    ${widthClass}
+    ${className}
+  `.trim();
   
-  // Handle common sx properties
-  if (sx.width) inlineStyle.width = sx.width;
-  if (sx.minWidth) inlineStyle.minWidth = sx.minWidth;
-  if (sx.maxWidth) inlineStyle.maxWidth = sx.maxWidth;
-  if (sx.height) inlineStyle.height = sx.height;
-  if (sx.minHeight) inlineStyle.minHeight = sx.minHeight;
-  if (sx.maxHeight) inlineStyle.maxHeight = sx.maxHeight;
-  if (sx.mt) inlineStyle.marginTop = `${sx.mt * 0.25}rem`;
-  if (sx.mb) inlineStyle.marginBottom = `${sx.mb * 0.25}rem`;
-  if (sx.ml) inlineStyle.marginLeft = `${sx.ml * 0.25}rem`;
-  if (sx.mr) inlineStyle.marginRight = `${sx.mr * 0.25}rem`;
-  if (sx.mx) inlineStyle.marginLeft = inlineStyle.marginRight = `${sx.mx * 0.25}rem`;
-  if (sx.my) inlineStyle.marginTop = inlineStyle.marginBottom = `${sx.my * 0.25}rem`;
-  if (sx.m) inlineStyle.margin = `${sx.m * 0.25}rem`;
+  // Handle loading state
+  const buttonContent = loading ? (
+    <>
+      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {loadingText || children}
+    </>
+  ) : (
+    <>
+      {startIcon && <span className="mr-2 -ml-1">{startIcon}</span>}
+      {children}
+      {endIcon && <span className="ml-2 -mr-1">{endIcon}</span>}
+    </>
+  );
   
+  // Render as link if href is provided
+  if (href) {
+    return (
+      <a 
+        className={classes}
+        href={disabled ? undefined : href}
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        {...props as any}
+      >
+        {buttonContent}
+      </a>
+    );
+  }
+  
+  // Render as button
   return (
     <button
-      className={`
-        ${baseClasses}
-        ${variantClasses[mappedVariant]}
-        ${sizeClasses[size]}
-        ${stateClasses}
-        ${widthClass}
-        ${radiusClasses}
-        ${className}
-      `}
-      disabled={disabled || isLoading}
-      style={inlineStyle}
+      type={type}
+      className={classes}
+      disabled={disabled || loading}
+      ref={ref}
       {...props}
     >
-      {isLoading ? (
-        <>
-          <svg 
-            className="animate-spin h-4 w-4 text-current" 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24"
-          >
-            <circle 
-              className="opacity-25" 
-              cx="12" 
-              cy="12" 
-              r="10" 
-              stroke="currentColor" 
-              strokeWidth="4"
-            />
-            <path 
-              className="opacity-75" 
-              fill="currentColor" 
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          {loadingText && <span className="ml-2">{loadingText}</span>}
-        </>
-      ) : (
-        <>
-          {startIcon && (
-            <span className="inline-flex">{startIcon}</span>
-          )}
-          
-          {children}
-          
-          {endIcon && (
-            <span className="inline-flex">{endIcon}</span>
-          )}
-        </>
-      )}
+      {buttonContent}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';
 
 export default Button; 
