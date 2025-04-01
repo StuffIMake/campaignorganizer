@@ -152,7 +152,12 @@ export const AudioTrackSelector: React.FC = () => {
                             <p className="text-xs text-blue-400">Currently playing</p>
                           )}
                         </div>
-                        <div className="group relative" title={alreadyPlaying ? "Already playing" : "Play track"}>
+                        <div 
+                          className="group relative" 
+                          title={alreadyPlaying ? "Already playing" : "Play track"}
+                          data-disabled={alreadyPlaying}
+                          aria-disabled={alreadyPlaying}
+                        >
                           <button 
                             className={`p-2 rounded-full ${alreadyPlaying ? 'text-blue-400 cursor-not-allowed' : 'text-white hover:bg-slate-700'}`}
                             onClick={() => !alreadyPlaying && handlePlayTrack(asset)}

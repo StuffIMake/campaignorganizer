@@ -6,6 +6,10 @@ import { createCharactersSlice, CharactersState } from '../features/characters/s
 import { createAssetsSlice, AssetsState } from '../features/assets/store';
 import { createCombatsSlice, CombatsSlice } from './slices/combatsSlice';
 import { createAudioSlice, AudioState } from '../features/audio/store/audioSlice';
+import { createMapSlice, MapSlice } from '../features/map/store';
+import { CustomLocation, Location, MapConfig } from '../types/location';
+import { Character, Item } from '../types/character';
+import { Combat } from '../types/combat';
 
 // Remove the problematic export that's causing the module error
 // export * from '../types';
@@ -21,97 +25,27 @@ const getCharactersData = async () => {
   return customCharacters || [];
 };
 
-// Export the current item type definitions
-// These interfaces will be moved to types directory in a future refactor
-export interface CustomLocation {
-  id: string;
-  name: string;
-  description: string;
-  backgroundMusic?: string;
-  entrySound?: string;
-  imageUrl?: string;
-  descriptionType?: 'markdown' | 'image' | 'pdf';
-  mixWithParent?: boolean;
-  coordinates?: [number, number];
-  inventory?: Item[];
-  sublocations?: CustomLocation[];
-  parentLocationId?: string;
-  connectedLocations?: string[];
-}
+// Export the types from the types directory for backward compatibility
+export type { CustomLocation, Character, Item, Combat };
 
-export interface Character {
-  id: string;
-  name: string;
-  description: string;
-  type: 'npc' | 'merchant' | 'enemy' | 'player';
-  descriptionType?: 'markdown' | 'image' | 'pdf';
-  descriptionAssetName?: string;  // Reference to an image/pdf in assets
-  hp: number;  // Hit Points
-  inventory?: Item[];
-  locationId?: string;
-}
-
-export interface Item {
-  id: string;
-  name: string;
-  description: string;
-  quantity: number;
-  price?: number;
-}
-
-export interface Combat {
-  id: string;
-  name: string;
-  description: string;      // Can be markdown text
-  descriptionType: 'markdown' | 'image' | 'pdf';
-  descriptionAssetName?: string;  // Reference to an image/pdf in assets
-  playerCharacters: Character[];
-  enemies: Character[];
-  entrySound?: string;      // Reference to audio asset
-  backgroundMusic?: string; // Reference to audio asset
-  backgroundImage?: string; // Reference to image asset
-  difficulty?: 'easy' | 'medium' | 'hard' | 'custom';
-  rewards?: Item[];
-  locationId?: string;      // Location where this combat takes place
-}
-
-// For type compatibility, we're using base types for our slices
-// and then combining them into our store state
-type BaseState = Omit<
-  LocationsState & CharactersState & AssetsState & CombatsSlice,
-  keyof AudioState
->;
-
-// Define a new type that omits conflicting methods from AudioState
-type AudioStateWithoutConflicts = Omit<AudioState, 'stopTrack'> & {
-  // Define the stopAllTracks method from AudioState as our legacy stopTrack
-  stopTrack: () => void;
-  // Add the stopIndividualTrack method for backward compatibility
-  stopIndividualTrack: (trackId: string) => void;
-}
-
-// Combine our store state
-interface StoreState extends BaseState, AudioStateWithoutConflicts {
-  // Other state not yet moved to slices
-  mapConfig: {
-    worldWidth: number;
-    worldHeight: number;
-  };
-  selectedLocationId: string | null;
-  currentLocation?: CustomLocation;
-  setCurrentLocation: (locationId: string) => void;
-  setSelectedLocationId: (locationId: string | null) => void;
+// Combine all slice types for the complete store state definition
+// Note: We use the individual slice types here for clarity and maintainability
+export type FullStoreState = LocationsState & 
+                             CharactersState & 
+                             AssetsState & 
+                             CombatsSlice & 
+                             MapSlice & 
+                             AudioState & {
+  // Add any methods or properties that genuinely need to be at the root
   initializeStore: () => Promise<void>;
-}
+};
+
+// Define the actual store state type used by Zustand create
+// This uses the FullStoreState to ensure all slices are included
+interface StoreState extends FullStoreState {}
 
 export const useStore = create<StoreState>()(
   (set, get, api) => {
-  // First get the audio slice
-  const audioSlice = createAudioSlice(
-    set as any, 
-    get as any, 
-    api
-  );
   
   // Create our combined store
   return {
@@ -120,36 +54,13 @@ export const useStore = create<StoreState>()(
     ...createCharactersSlice(set, get, api),
     ...createAssetsSlice(set, get, api),
     ...createCombatsSlice(set, get, api),
-    
-    // Add the audio slice with renamed methods to avoid conflicts
-    ...audioSlice,
-    // Override stopTrack to use the old behavior (stop all tracks)
-    stopTrack: audioSlice.stopAllTracks,
-    // Add stopIndividualTrack to match our hook's expectation
-    stopIndividualTrack: audioSlice.stopTrack,
-    
-    // Initialize remaining state
-    mapConfig: {
-      worldWidth: 1920,
-      worldHeight: 1080,
-    },
-    selectedLocationId: null,
-    currentLocation: undefined,
-    
-    // Add remaining methods that haven't been moved to slices yet
-    setCurrentLocation: (locationId) => {
-      const location = get().locations.find((loc) => loc.id === locationId);
-      set({ currentLocation: location });
-    },
-  
-    setSelectedLocationId: (locationId) => {
-      set({ selectedLocationId: locationId });
-    },
+    ...createMapSlice(set, get, api),
+    ...createAudioSlice(set, get, api),
     
     // Initialize assets asynchronously
     initializeStore: async () => {
       try {
-        set({ isLoading: true });
+        set({ isLoading: true }); // Maybe set loading state on relevant slices?
         
         // Use the refreshAssets method from the assets slice
         await get().refreshAssets();
@@ -157,24 +68,20 @@ export const useStore = create<StoreState>()(
         const { hasAssets } = get();
         
         if (hasAssets) {
-          // Load locations and characters from IndexedDB
-          const locations = await getLocationsData();
-          const characters = await getCharactersData();
-          
-          // Use fetchCombats from the combats slice
-          await get().fetchCombats();
-          
-          set({ 
-            locations, 
-            characters,
-            isLoading: false 
-          });
-        } else {
-          set({ isLoading: false });
+          // Call fetch methods on the respective slices
+          await Promise.all([
+            get().fetchLocations(),
+            get().fetchCharacters(),
+            get().fetchCombats()
+          ]);
         }
+        
+        set({ isLoading: false }); // Reset loading state
+
       } catch (error) {
         console.error('Error initializing store:', error);
-        set({ isLoading: false });
+        // Consider setting error state on relevant slices
+        set({ isLoading: false }); 
       }
     }
   };

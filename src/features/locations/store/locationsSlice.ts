@@ -1,14 +1,17 @@
 import { StateCreator } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { CustomLocation } from '../../../store';
+import { AssetManager } from '../../../services/assetManager';
+import { BaseState } from '../../../types/index';
 
-export interface LocationsState {
+export interface LocationsState extends BaseState {
   locations: CustomLocation[];
   addLocation: (location: Omit<CustomLocation, 'id'>) => void;
   updateLocation: (id: string, updates: Partial<CustomLocation>) => void;
   deleteLocation: (id: string) => void;
   getAllTopLevelLocations: () => CustomLocation[];
   getSublocationsByParentId: (parentId: string) => CustomLocation[];
+  fetchLocations: () => Promise<void>;
 }
 
 export const createLocationsSlice: StateCreator<
@@ -18,6 +21,8 @@ export const createLocationsSlice: StateCreator<
   LocationsState
 > = (set, get) => ({
   locations: [],
+  isLoading: false,
+  error: null,
   
   addLocation: (location) => {
     const newLocation: CustomLocation = {
@@ -64,5 +69,21 @@ export const createLocationsSlice: StateCreator<
   
   getSublocationsByParentId: (parentId) => {
     return get().locations.filter(location => location.parentLocationId === parentId);
+  },
+  
+  fetchLocations: async () => {
+    try {
+      set({ isLoading: true, error: null } as Partial<LocationsState>);
+      const locationsData = await AssetManager.getDataObject<CustomLocation[]>('locations.json');
+      set({ 
+        locations: locationsData || [],
+        isLoading: false 
+      } as Partial<LocationsState>);
+    } catch (error) {
+      set({ 
+        error: `Failed to fetch locations: ${error instanceof Error ? error.message : String(error)}`,
+        isLoading: false 
+      } as Partial<LocationsState>);
+    }
   }
 }); 

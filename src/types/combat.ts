@@ -1,4 +1,4 @@
-import { Character } from './character';
+import { Character, Item } from './character';
 
 /**
  * Represents a reward item that can be earned from combat
@@ -45,7 +45,7 @@ export interface EnemyInstance {
 /**
  * Difficulty levels for combat encounters
  */
-export type CombatDifficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly';
+export type CombatDifficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly' | 'custom';
 
 /**
  * Status of a combat encounter
@@ -63,7 +63,13 @@ export interface Combat {
   name: string;
   
   /** Optional detailed description of the combat */
-  description?: string;
+  description: string;
+  
+  /** Type of the description content */
+  descriptionType: 'markdown' | 'image' | 'pdf';
+  
+  /** Optional asset name for the description (if type is image or pdf) */
+  descriptionAssetName?: string;
   
   /** Optional difficulty level */
   difficulty?: CombatDifficulty;
@@ -78,16 +84,16 @@ export interface Combat {
   backgroundMusic?: string;
   
   /** Optional start sound that plays when combat begins */
-  startSound?: string;
+  entrySound?: string;
   
   /** Optional background image for this combat */
   backgroundImage?: string;
   
-  /** Enemy characters in this combat with their counts */
-  enemies: EnemyInstance[];
+  /** Player characters participating in this combat */
+  playerCharacters: Character[];
   
-  /** IDs of player characters participating in this combat */
-  playerCharacterIds: string[];
+  /** Enemy characters in this combat */
+  enemies: Character[];
   
   /** Optional round counter for active combats */
   round?: number;
@@ -96,7 +102,7 @@ export interface Combat {
   turn?: number;
   
   /** Optional rewards for completing the combat */
-  rewards?: RewardItem[];
+  rewards?: Item[];
   
   /** Optional experience points awarded for completing the combat */
   experiencePoints?: number;

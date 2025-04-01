@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { AudioTrackSelector } from './AudioTrackSelector';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 
@@ -137,6 +137,7 @@ export const AudioTrackPanel: React.FC = () => {
           value={volume}
           onChange={handleVolumeChange}
           className="w-full accent-blue-500"
+          aria-label="Master volume control"
         />
       </div>
 
@@ -153,7 +154,7 @@ export const AudioTrackPanel: React.FC = () => {
       ) : (
         <ul className="space-y-2">
           {activeTracks.map((track) => (
-            <React.Fragment key={track.id}>
+            <Fragment key={track.id}>
               <li className="flex items-center gap-2">
                 <button 
                   className="p-1 text-white/80 hover:text-white transition-colors"
@@ -229,10 +230,11 @@ export const AudioTrackPanel: React.FC = () => {
                     value={track.volume}
                     onChange={handleTrackVolumeChange(track.id)}
                     className="w-full accent-blue-500"
+                    aria-label={`Volume control for ${track.name}`}
                   />
                 </div>
               )}
-            </React.Fragment>
+            </Fragment>
           ))}
         </ul>
       )}

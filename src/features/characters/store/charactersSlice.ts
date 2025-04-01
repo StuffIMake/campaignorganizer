@@ -1,8 +1,10 @@
 import { StateCreator } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Character, Item } from '../../../store';
+import { AssetManager } from '../../../services/assetManager';
+import { BaseState } from '../../../types/index';
 
-export interface CharactersState {
+export interface CharactersState extends BaseState {
   characters: Character[];
   addCharacter: (character: Omit<Character, 'id'>) => void;
   updateCharacter: (id: string, updates: Partial<Character>) => void;
@@ -12,6 +14,9 @@ export interface CharactersState {
   addItemToCharacter: (characterId: string, item: Omit<Item, 'id'>) => void;
   updateCharacterItem: (characterId: string, itemId: string, updates: Partial<Item>) => void;
   deleteCharacterItem: (characterId: string, itemId: string) => void;
+  
+  // Fetch characters action
+  fetchCharacters: () => Promise<void>;
 }
 
 export const createCharactersSlice: StateCreator<
@@ -21,6 +26,8 @@ export const createCharactersSlice: StateCreator<
   CharactersState
 > = (set, get) => ({
   characters: [],
+  isLoading: false,
+  error: null,
   
   addCharacter: (character) => {
     const newCharacter: Character = {
@@ -97,5 +104,21 @@ export const createCharactersSlice: StateCreator<
         };
       })
     }));
+  },
+  
+  fetchCharacters: async () => {
+    try {
+      set({ isLoading: true, error: null } as Partial<CharactersState>);
+      const charactersData = await AssetManager.getDataObject<Character[]>('characters.json');
+      set({ 
+        characters: charactersData || [],
+        isLoading: false 
+      } as Partial<CharactersState>);
+    } catch (error) {
+      set({ 
+        error: `Failed to fetch characters: ${error instanceof Error ? error.message : String(error)}`,
+        isLoading: false 
+      } as Partial<CharactersState>);
+    }
   }
 }); 

@@ -6,6 +6,7 @@
 import { StateCreator } from 'zustand';
 import { Howl } from 'howler';
 import { AssetManager } from '../../../services/assetManager';
+import { generateUUID } from '../../../utils/uuid';
 
 /**
  * Represents an audio track that can be played
@@ -109,7 +110,7 @@ export const createAudioSlice: StateCreator<
   addAudioTrack: (track) => {
     const newTrack = {
       ...track,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       howl: new Howl({ src: [track.url], html5: true }),
     };
     set((state) => ({
@@ -203,7 +204,7 @@ export const createAudioSlice: StateCreator<
       
       // Create a new active track
       const newTrack: ActiveTrack = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         howl,
         name: assetName,
         volume: get().volume,

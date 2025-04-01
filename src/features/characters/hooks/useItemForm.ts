@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Item } from '../../../store';
+import { generateUUID } from '../../../utils/uuid';
 
 export const useItemForm = (
   initialInventory: Item[] = [],
@@ -10,7 +11,7 @@ export const useItemForm = (
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   const [newItem, setNewItem] = useState<Item>({
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     name: '',
     description: '',
     quantity: 1,
@@ -19,7 +20,7 @@ export const useItemForm = (
   
   const resetItemForm = () => {
     setNewItem({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: '',
       description: '',
       quantity: 1,

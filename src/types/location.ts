@@ -3,6 +3,8 @@
  * @description Type definitions for location-related data structures
  */
 
+import { Item } from './character';
+
 /**
  * Type of description content in a location
  */
@@ -58,15 +60,27 @@ export interface Location {
   /** Whether audio from this location should be mixed with parent location audio */
   mixWithParent?: boolean;
   
-  /** Position coordinates on the map (as percentages) */
-  coordinates?: MapPosition;
+  /** Position coordinates on the map (as percentages or array of numbers) */
+  coordinates?: MapPosition | [number, number];
   
   /** IDs of locations connected to this one */
   connectedLocations?: string[];
   
   /** ID of the parent location if this is a sublocation */
   parentLocationId?: string;
+  
+  /** Inventory items at this location */
+  inventory?: Item[];
+  
+  /** Sublocations within this location */
+  sublocations?: Location[];
 }
+
+/**
+ * Legacy type alias for backward compatibility
+ * @deprecated Use Location instead
+ */
+export type CustomLocation = Location;
 
 /**
  * Data needed to create a new location (without ID)

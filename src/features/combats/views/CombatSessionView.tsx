@@ -1,15 +1,34 @@
 import React from 'react';
 import { Box, Typography, Button } from '../../../components/ui';
-import { useCombatSession } from '../hooks';
+import { useCombatSession } from '../hooks/useCombatSession';
+import { ActiveCombatView } from './ActiveCombatView';
 import MarkdownContent from '../../../components/MarkdownContent';
-import { ActiveCombatView } from '../../../components/ActiveCombatView';
 
+/**
+ * CombatSessionView component
+ * 
+ * Container for rendering the active combat session view.
+ * This component handles routing logic while delegating the 
+ * actual combat UI to ActiveCombatView
+ */
 export const CombatSessionView: React.FC = () => {
   const { combat, handleClose } = useCombatSession();
   
-  // Return null if the combat isn't found
   if (!combat) {
-    return null;
+    return (
+      <Box className="p-8 text-center">
+        <Typography variant="h5" className="mb-4">
+          Combat session not found
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleClose}
+        >
+          Back to Combat List
+        </Button>
+      </Box>
+    );
   }
   
   return (
@@ -28,7 +47,7 @@ export const CombatSessionView: React.FC = () => {
       </Box>
       
       <Box className="bg-gray-800 p-4 rounded-lg">
-        <ActiveCombatView combat={combat} onClose={handleClose} />
+        <ActiveCombatView />
       </Box>
     </div>
   );

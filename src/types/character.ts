@@ -9,7 +9,7 @@ export interface Item {
   name: string;
   
   /** Optional detailed description of the item */
-  description?: string;
+  description: string;
   
   /** Quantity of the item */
   quantity: number;
@@ -77,6 +77,11 @@ export interface CharacterStat {
 export type DescriptionType = 'markdown' | 'image' | 'pdf';
 
 /**
+ * Defines the type of character role
+ */
+export type CharacterType = 'npc' | 'merchant' | 'enemy' | 'player';
+
+/**
  * Represents a character in the game
  */
 export interface Character {
@@ -86,8 +91,11 @@ export interface Character {
   /** Name of the character */
   name: string;
   
-  /** Optional detailed description of the character */
-  description?: string;
+  /** Description of the character */
+  description: string;
+  
+  /** Type of character (npc, merchant, enemy, player) */
+  type: CharacterType;
   
   /** Type of the description content */
   descriptionType?: DescriptionType;
@@ -112,6 +120,9 @@ export interface Character {
   
   /** Optional location ID where the character is currently located */
   locationId?: string;
+  
+  /** Character hit points */
+  hp?: number;
   
   /** Optional character stats like HP, AC, etc. */
   stats?: CharacterStat[];

@@ -1,13 +1,14 @@
 import { StateCreator } from 'zustand';
 import { AssetManager } from '../../services/assetManager';
+import { generateUUID } from '../../utils/uuid';
+import { BaseState } from '../../types/index';
 import { 
   Combat, 
   CombatCreate, 
   CombatUpdate, 
   RewardItem, 
-  InitiativeEntry, 
-  BaseState 
-} from '../../types';
+  InitiativeEntry 
+} from '../../types/index';
 
 /**
  * Combats slice state interface
@@ -113,7 +114,7 @@ export const createCombatsSlice: StateCreator<
       
       const newCombat: Combat = {
         ...combatData,
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         status: combatData.status || 'planned',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -307,7 +308,14 @@ export const createCombatsSlice: StateCreator<
       }
       
       const existingRewards = combat.rewards || [];
-      const updatedRewards = [...existingRewards, ...rewards];
+      
+      // Convert RewardItems to Items by ensuring all required fields are present
+      const convertedRewards = rewards.map(reward => ({
+        ...reward,
+        description: reward.description || '', // Ensure description is never undefined
+      }));
+      
+      const updatedRewards = [...existingRewards, ...convertedRewards];
       
       return await get().updateCombat(combatId, { rewards: updatedRewards });
     } catch (error) {
