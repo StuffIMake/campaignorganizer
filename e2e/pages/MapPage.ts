@@ -73,4 +73,26 @@ export class MapPage {
       await this.page.mouse.up();
     }
   }
+
+  // Add methods to get map state
+  async getMapZoom(): Promise<number> {
+    // Assumes map instance is accessible, e.g., window.map or similar. Adjust if needed.
+    return this.page.evaluate(() => {
+      // @ts-ignore - Accessing potential global map instance
+      const map = window.map || document.querySelector('.mapboxgl-map')?.__mapInstance; // Common patterns
+      if (!map) throw new Error('Map instance not found on page.');
+      return map.getZoom();
+    });
+  }
+
+  async getMapCenter(): Promise<{lng: number, lat: number}> {
+    // Assumes map instance is accessible, e.g., window.map or similar. Adjust if needed.
+    return this.page.evaluate(() => {
+      // @ts-ignore - Accessing potential global map instance
+      const map = window.map || document.querySelector('.mapboxgl-map')?.__mapInstance; // Common patterns
+      if (!map) throw new Error('Map instance not found on page.');
+      const center = map.getCenter();
+      return { lng: center.lng, lat: center.lat }; // Return simple object
+    });
+  }
 } 
