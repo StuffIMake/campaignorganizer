@@ -18,7 +18,7 @@ import InputAdornment from './InputAdornment';
 import { List, ListItem, ListItemButton, ListItemIcon, ListItemText } from './List';
 import MenuItem from './MenuItem';
 import Paper from './Paper';
-import Select from './Select';
+import { Select, Item } from './Select';
 import Snackbar from './Snackbar';
 import Stack from './Stack';
 import TextField from './TextField';
@@ -82,6 +82,7 @@ export {
   MenuItem,
   Paper,
   Select,
+  Item,
   Snackbar,
   Stack,
   TextField,

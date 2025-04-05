@@ -36,14 +36,16 @@ export const CombatParticipantList: React.FC<CombatParticipantListProps> = ({
   onSelectParticipant
 }) => {
   return (
-    <List className="w-full max-h-[60vh] overflow-auto">
+    <List className="w-full max-h-[60vh] overflow-auto" data-testid="participant-list">
       {participants.map((participant, index) => {
         const isCurrentTurn = index === currentTurnIndex;
         const isSelected = participant.id === selectedParticipantId;
+        const testIdName = participant.character.name.replace(/\s+/g, '-'); // Create a test-id friendly name
         
         return (
           <ListItem
             key={participant.id}
+            data-testid={`participant-item-${testIdName}`}
             className={`
               mb-2 rounded-lg transition-all duration-200
               ${isCurrentTurn ? 'bg-blue-100 dark:bg-blue-900/30' : ''}

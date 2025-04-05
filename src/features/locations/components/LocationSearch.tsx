@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { 
-  Paper, 
   TextField, 
   InputAdornment, 
   IconButton 
@@ -26,10 +25,10 @@ interface LocationSearchProps {
   onSearchChange: (value: string) => void;
   
   /** Number of locations matching the current search */
-  resultsCount: number;
+  resultsCount?: number;
   
   /** Total number of locations (used for displaying counts) */
-  totalCount: number;
+  totalCount?: number;
 }
 
 /**
@@ -43,30 +42,45 @@ interface LocationSearchProps {
  */
 export const LocationSearch: React.FC<LocationSearchProps> = ({
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  resultsCount,
+  totalCount
 }) => {
   return (
-    <Paper className="p-4 mb-4">
-      <TextField
-        fullWidth
-        placeholder="Search locations..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-          endAdornment: searchQuery && (
-            <InputAdornment position="end">
-              <IconButton onClick={() => onSearchChange('')} size="small">
-                <ClearIcon />
-              </IconButton>
-            </InputAdornment>
-          )
-        }}
-      />
-    </Paper>
+    <div className="w-full">
+      <div className="bg-background-surface/60 backdrop-blur-sm rounded-xl shadow-md p-1">
+        <TextField
+          fullWidth
+          placeholder="Search locations..."
+          value={searchQuery}
+          onChange={(value) => onSearchChange(value)}
+          aria-label="Search locations"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon className="text-text-secondary" />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={() => onSearchChange('')} 
+                  size="small"
+                  aria-label="Clear location search"
+                  className="text-text-secondary hover:text-primary-light"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </div>
+      {(resultsCount !== undefined && totalCount !== undefined) && (
+        <div className="text-xs text-text-secondary mt-1 ml-3">
+          {searchQuery ? `${resultsCount} matches found` : `${totalCount} locations total`}
+        </div>
+      )}
+    </div>
   );
 }; 

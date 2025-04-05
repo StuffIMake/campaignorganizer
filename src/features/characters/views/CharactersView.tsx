@@ -1,18 +1,23 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Button, 
   Paper, 
   Grid,
   Snackbar, 
-  IconButton 
+  IconButton,
+  Typography 
 } from '../../../components/ui';
 import { 
   AddIcon, 
   SaveIcon, 
-  CloseIcon 
+  CloseIcon,
+  SearchIcon,
+  ExpandLessIcon as GridViewIcon,
+  ExpandMoreIcon as ListViewIcon,
+  PersonIcon
 } from '../../../assets/icons';
 import { 
-  CharacterCard, 
+  CharacterCard as CharacterItem, 
   CharacterSearch, 
   CharacterFormDialog,
   ItemFormDialog,
@@ -40,6 +45,11 @@ interface CharacterFormData {
 }
 
 export const CharactersView: React.FC = () => {
+  // View options state
+  const [isGridView, setIsGridView] = useState(true);
+  const [expandedCharacters, setExpandedCharacters] = useState<Record<string, boolean>>({});
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  
   const { 
     characters,
     filteredCharacters,
@@ -96,7 +106,7 @@ export const CharactersView: React.FC = () => {
   } = useAssetViewer();
 
   // State for managing the inventory for the currently edited character
-  const [editingInventoryCharacterId, setEditingInventoryCharacterId] = React.useState<string | null>(null);
+  const [editingInventoryCharacterId, setEditingInventoryCharacterId] = useState<string | null>(null);
   
   // Find the character whose inventory we're editing
   const characterWithInventory = editingInventoryCharacterId 
@@ -132,10 +142,23 @@ export const CharactersView: React.FC = () => {
     }
   }, [isAddDialogOpen, isEditDialogOpen, loadImageAssets]);
 
+  // Handle search query changes
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setIsSearchActive(query.length > 0);
+  };
+
   const handleDeleteCharacter = (characterId: string) => {
     if (window.confirm('Are you sure you want to delete this character? This action cannot be undone.')) {
       deleteCharacter(characterId);
       showNotification('Character deleted successfully');
+      
+      // Remove character from expanded state if it was expanded
+      if (expandedCharacters[characterId]) {
+        const newExpandedCharacters = { ...expandedCharacters };
+        delete newExpandedCharacters[characterId];
+        setExpandedCharacters(newExpandedCharacters);
+      }
     }
   };
 
@@ -173,64 +196,125 @@ export const CharactersView: React.FC = () => {
     showNotification('Item deleted successfully');
   };
 
+  // Toggle character inventory expansion
+  const handleToggleInventory = (characterId: string) => {
+    setExpandedCharacters(prev => ({
+      ...prev,
+      [characterId]: !prev[characterId]
+    }));
+  };
+
   // Function to handle form field changes
   const handleFormChange = (field: string, value: any) => {
     handleChange(field as keyof CharacterFormData, value);
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Characters</h1>
-        <div>
+    <div className="container mx-auto px-4 py-6 max-w-screen-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">
+          Characters
+        </h1>
+        <div className="flex gap-2 mt-3 md:mt-0">
           <Button 
             startIcon={<AddIcon />}
             variant="contained" 
             color="primary"
-            onClick={() => setIsAddDialogOpen(true)}
-            className="mr-2"
+            onPress={() => setIsAddDialogOpen(true)}
+            className="btn-glow"
           >
             Add Character
           </Button>
           <Button 
             startIcon={<SaveIcon />}
             variant="outlined"
-            onClick={handleSaveData}
+            onPress={handleSaveData}
           >
             Save Data
           </Button>
         </div>
       </div>
 
-      <CharacterSearch
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      {/* Floating search and view toggle */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div className="flex-grow w-full md:w-auto shadow-md rounded-xl">
+          <CharacterSearch
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
+          />
+        </div>
+        <div className="flex items-center">
+          <Button 
+            startIcon={isGridView ? <ListViewIcon /> : <GridViewIcon />}
+            variant="contained" 
+            color="secondary"
+            onPress={() => setIsGridView(!isGridView)}
+            className="shadow-md rounded-xl"
+          >
+            {isGridView ? "List View" : "Grid View"}
+          </Button>
+        </div>
+      </div>
 
-      <Paper className="p-4">
-        {filteredCharacters.length === 0 ? (
-          <div className="text-center p-4">
-            <p className="text-gray-500">No characters found. Create a new character to get started.</p>
-          </div>
-        ) : (
-          <Grid container spacing={3}>
-            {filteredCharacters.map(character => (
-              <Grid item xs={12} md={6} lg={4} key={character.id}>
-                <CharacterCard
+      {/* Direct content area without nested containers */}
+      <div className="mb-6">
+        {filteredCharacters.length > 0 ? (
+          isGridView ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredCharacters.map(character => (
+                <CharacterItem
+                  key={character.id}
                   character={character}
                   locations={locations}
                   onEdit={handleEditCharacter}
                   onDelete={handleDeleteCharacter}
-                  onViewAsset={() => handleViewAsset(character)}
+                  onViewAsset={handleViewAsset}
                   onAddItem={handleAddItem}
                   onEditItem={handleEditItem}
                   onDeleteItem={handleDeleteItemFromInventory}
+                  gridView={true}
+                  isExpanded={expandedCharacters[character.id]}
+                  onToggleInventory={handleToggleInventory}
                 />
-              </Grid>
-            ))}
-          </Grid>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 shadow-md rounded-xl bg-background-surface/30 p-4">
+              {filteredCharacters.map(character => (
+                <CharacterItem
+                  key={character.id}
+                  character={character}
+                  locations={locations}
+                  onEdit={handleEditCharacter}
+                  onDelete={handleDeleteCharacter}
+                  onViewAsset={handleViewAsset}
+                  onAddItem={handleAddItem}
+                  onEditItem={handleEditItem}
+                  onDeleteItem={handleDeleteItemFromInventory}
+                  gridView={false}
+                  isExpanded={expandedCharacters[character.id]}
+                  onToggleInventory={handleToggleInventory}
+                />
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-background-surface flex items-center justify-center">
+              <PersonIcon className="text-4xl text-text-secondary" />
+            </div>
+            <p className="text-text-secondary text-lg mb-6">No characters found. Create your first character to get started.</p>
+            <Button
+              variant="contained"
+              color="primary"
+              onPress={() => setIsAddDialogOpen(true)}
+              className="btn-glow"
+            >
+              Create Character
+            </Button>
+          </div>
         )}
-      </Paper>
+      </div>
 
       {/* Character Form Dialog */}
       <CharacterFormDialog
@@ -248,7 +332,7 @@ export const CharactersView: React.FC = () => {
         imageAssets={imageAssets}
       />
 
-      {/* Item Form Dialog */}
+      {/* Inventory Item Dialog */}
       <ItemFormDialog
         open={isAddItemDialogOpen || isEditItemDialogOpen}
         onClose={() => {
@@ -262,7 +346,7 @@ export const CharactersView: React.FC = () => {
         onSubmit={isAddItemDialogOpen ? handleAddInventoryItem : handleSaveEditedItem}
       />
 
-      {/* Asset Viewer Dialog */}
+      {/* Asset Viewer Dialogs */}
       <AssetViewerDialog
         pdfViewerOpen={pdfViewerOpen}
         markdownDialogOpen={markdownDialogOpen}
@@ -272,16 +356,16 @@ export const CharactersView: React.FC = () => {
         onClose={closeAssetViewer}
       />
 
-      {/* Notification Snackbar */}
+      {/* Notifications */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={hideNotification}
         message={snackbarMessage}
         action={
-          <IconButton
-            size="small"
-            color="default"
+          <IconButton 
+            size="small" 
+            aria-label="close"
             onClick={hideNotification}
           >
             <CloseIcon />

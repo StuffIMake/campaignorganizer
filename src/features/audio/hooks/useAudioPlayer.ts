@@ -31,8 +31,8 @@ export const useAudioPlayer = () => {
     activeTracks,
     addAudioTrack,
     playTrack,
-    stopTrack: stopAllTracks, // Alias to match our new naming convention
-    stopIndividualTrack, // Use the directly exposed method
+    stopAllTracks: stopAllTracksFromSlice, // Renamed alias
+    stopTrack, // Correctly destructure stopTrack for individual stopping
     setVolume,
     setTrackVolume,
     toggleMuteTrack
@@ -62,16 +62,16 @@ export const useAudioPlayer = () => {
    * Stops all currently playing audio tracks
    */
   const stopAll = useCallback(() => {
-    stopAllTracks();
-  }, [stopAllTracks]);
+    stopAllTracksFromSlice(); // Use the renamed alias
+  }, [stopAllTracksFromSlice]); // Update dependency
 
   /**
    * Stops a specific audio track by ID
    * @param trackId - The ID of the track to stop
    */
   const stop = useCallback((trackId: string) => {
-    stopIndividualTrack(trackId);
-  }, [stopIndividualTrack]);
+    stopTrack(trackId); // Call the correct stopTrack function
+  }, [stopTrack]); // Update dependency
 
   /**
    * Sets the master volume for all audio

@@ -165,15 +165,20 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
             fullWidth
             value={editingLocation.name}
             onChange={(e) => handleChange('name', e.target.value)}
+            aria-label="Location name"
           />
           
           <TextField
             label="Description"
             fullWidth
-            multiline
-            rows={4}
             value={editingLocation.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
+            aria-label="Location description"
+            InputProps={{
+              inputProps: {
+                style: { minHeight: '100px' }
+              }
+            }}
           />
           
           <Box>
@@ -376,10 +381,10 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="secondary">
+        <Button onPress={onClose} color="secondary">
           Cancel
         </Button>
-        <Button onClick={handleSave} color="primary">
+        <Button onPress={handleSave} color="primary">
           Save
         </Button>
       </DialogActions>

@@ -1,13 +1,21 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import istanbul from 'vite-plugin-istanbul';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react()
-  ],
+    react(),
+    // Only add istanbul when VITE_COVERAGE=true, but with forced instrumentation
+    process.env.VITE_COVERAGE === 'true' && istanbul({
+      include: 'src/**/*',
+      exclude: ['node_modules', 'test/', 'e2e/'],
+      extension: ['.js', '.ts', '.tsx'],
+      forceBuildInstrument: true, // This setting was key to making it work
+    }),
+  ].filter(Boolean),
   base: '/campaignorganizer/', // GitHub Pages repository name
   server: {
     port: 3000,

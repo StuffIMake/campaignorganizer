@@ -1,5 +1,4 @@
-import React from 'react';
-import { Combobox } from '@headlessui/react';
+import React, { useState } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
@@ -11,7 +10,10 @@ import {
   FormControlLabel,
   Switch,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  Box,
+  Autocomplete,
+  Chip
 } from '../../../components/ui';
 import { SearchIcon, ClearIcon } from '../../../assets/icons';
 import { CustomLocation } from '../../../store';
@@ -70,42 +72,14 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
   entrySoundSearchQuery,
   setEntrySoundSearchQuery
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     onSubmit();
   };
 
-  const filteredImageFiles = imageSearchQuery === ''
-    ? imageFiles
-    : imageFiles.filter(file =>
-        file.toLowerCase().includes(imageSearchQuery.toLowerCase())
-      );
-
-  const filteredAudioFiles = {
-    bgMusic: bgMusicSearchQuery === ''
-      ? audioFiles
-      : audioFiles.filter(file =>
-          file.toLowerCase().includes(bgMusicSearchQuery.toLowerCase())
-        ),
-    entrySound: entrySoundSearchQuery === ''
-      ? audioFiles
-      : audioFiles.filter(file =>
-          file.toLowerCase().includes(entrySoundSearchQuery.toLowerCase())
-        )
-  };
-
-  const filteredLocations = {
-    parent: parentSearchQuery === ''
-      ? locations
-      : locations.filter(location =>
-          location.name.toLowerCase().includes(parentSearchQuery.toLowerCase())
-        ),
-    connected: connectedSearchQuery === ''
-      ? locations
-      : locations.filter(location =>
-          location.name.toLowerCase().includes(connectedSearchQuery.toLowerCase())
-        )
-  };
+  // Get selected connected locations
+  const selectedConnectedLocations = locations.filter(loc => 
+    formData.connectedLocations.includes(loc.id)
+  );
 
   return (
     <Dialog
@@ -117,86 +91,87 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
       <form onSubmit={handleSubmit}>
         <DialogTitle>{title}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} className="mt-2">
-            <Grid item xs={12}>
-              <TextField
-                label="Name"
-                fullWidth
-                required
-                value={formData.name}
-                onChange={(e) => onChange('name', e.target.value)}
-              />
-            </Grid>
+          <Box className="space-y-4 mt-2">
+            <TextField
+              fullWidth
+              label="Name"
+              value={formData.name}
+              onChange={(value) => onChange('name', value)}
+              isRequired
+            />
             
-            <Grid item xs={12}>
-              <TextField
-                label="Description"
-                fullWidth
-                value={formData.description}
-                onChange={(e) => onChange('description', e.target.value)}
-              />
-            </Grid>
+            <TextField 
+              name="description"
+              value={formData.description}
+              onChange={(value) => onChange('description', value)}
+              fullWidth
+              aria-label="Location description"
+              className="mb-4"
+              InputProps={{
+                inputProps: {
+                  style: { minHeight: '100px' }
+                }
+              }}
+            />
             
-            <Grid item xs={6}>
-              <TextField
-                label="X Coordinate"
-                type="number"
-                fullWidth
-                value={formData.coordinates[0]}
-                onChange={(e) => onChange('coordinates', [parseFloat(e.target.value), formData.coordinates[1]])}
-              />
-            </Grid>
+            <TextField
+              fullWidth
+              label="X Coordinate"
+              value={formData.coordinates[0]?.toString() || ''}
+              onChange={(value) => {
+                // Allow numbers, decimal point, minus sign
+                if (/^-?\d*\.?\d*$/.test(value) || value === '') {
+                  onChange('coordinates', [value === '' ? 0 : value, formData.coordinates[1]]);
+                }
+              }}
+              aria-label="X Coordinate"
+              InputProps={{
+                inputProps: { 
+                  type: "text",
+                  inputMode: "decimal",
+                  pattern: "[0-9]*[.]?[0-9]*" 
+                }
+              }}
+            />
             
-            <Grid item xs={6}>
-              <TextField
-                label="Y Coordinate"
-                type="number"
-                fullWidth
-                value={formData.coordinates[1]}
-                onChange={(e) => onChange('coordinates', [formData.coordinates[0], parseFloat(e.target.value)])}
-              />
-            </Grid>
+            <TextField
+              fullWidth
+              label="Y Coordinate"
+              value={formData.coordinates[1]?.toString() || ''}
+              onChange={(value) => {
+                // Allow numbers, decimal point, minus sign
+                if (/^-?\d*\.?\d*$/.test(value) || value === '') {
+                  onChange('coordinates', [formData.coordinates[0], value === '' ? 0 : value]);
+                }
+              }}
+              aria-label="Y Coordinate"
+              InputProps={{
+                inputProps: { 
+                  type: "text",
+                  inputMode: "decimal",
+                  pattern: "[0-9]*[.]?[0-9]*" 
+                }
+              }}
+            />
             
-            <Grid item xs={12}>
-              <Combobox value={formData.parentLocationId} onChange={(value) => onChange('parentLocationId', value)}>
-                <div className="relative mt-1">
-                  <Combobox.Input
-                    className="w-full border rounded p-2"
-                    placeholder="Parent Location"
-                    displayValue={(locationId: string) => {
-                      if (!locationId) return '';
-                      const location = locations.find(loc => loc.id === locationId);
-                      return location ? location.name : '';
-                    }}
-                    onChange={(e) => setParentSearchQuery(e.target.value)}
-                  />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </Combobox.Button>
-                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 shadow-lg z-10">
-                    {filteredLocations.parent.length === 0 ? (
-                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                        Nothing found.
-                      </div>
-                    ) : (
-                      filteredLocations.parent.map(location => (
-                        <Combobox.Option
-                          key={location.id}
-                          value={location.id}
-                          className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-indigo-600 text-white' : 'text-gray-900'
-                            }`
-                          }
-                        >
-                          {location.name}
-                        </Combobox.Option>
-                      ))
-                    )}
-                  </Combobox.Options>
-                </div>
-              </Combobox>
-            </Grid>
+            {/* Parent Location Autocomplete */}
+            <Autocomplete<CustomLocation | null>
+              options={locations}
+              getOptionLabel={(option: CustomLocation | null) => option?.name || ''}
+              value={locations.find(loc => loc.id === formData.parentLocationId) || null}
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: CustomLocation | null) => {
+                onChange('parentLocationId', selectedOption?.id || '');
+              }}
+              isOptionEqualToValue={(option: CustomLocation | null, value: CustomLocation | null) => option?.id === value?.id}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params}
+                  label="Parent Location"
+                  placeholder="Select a parent location" 
+                  fullWidth
+                />
+              )}
+            />
             
             <Grid item xs={12}>
               <FormControlLabel
@@ -210,124 +185,101 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
               />
             </Grid>
             
-            {/* Background Music */}
-            <Grid item xs={12}>
-              <Combobox value={formData.backgroundMusic} onChange={(value) => onChange('backgroundMusic', value)}>
-                <div className="relative mt-1">
-                  <Combobox.Input
-                    className="w-full border rounded p-2"
-                    placeholder="Background Music"
-                    displayValue={(file: string) => file}
-                    onChange={(e) => setBgMusicSearchQuery(e.target.value)}
-                  />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </Combobox.Button>
-                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 shadow-lg z-10">
-                    {filteredAudioFiles.bgMusic.length === 0 ? (
-                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                        Nothing found.
-                      </div>
-                    ) : (
-                      filteredAudioFiles.bgMusic.map(file => (
-                        <Combobox.Option
-                          key={file}
-                          value={file}
-                          className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-indigo-600 text-white' : 'text-gray-900'
-                            }`
-                          }
-                        >
-                          {file}
-                        </Combobox.Option>
-                      ))
-                    )}
-                  </Combobox.Options>
-                </div>
-              </Combobox>
-            </Grid>
+            {/* Background Music Autocomplete */}
+            <Autocomplete<string | null>
+              options={audioFiles}
+              getOptionLabel={(option: string | null) => option || ''}
+              value={formData.backgroundMusic || null}
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+                onChange('backgroundMusic', selectedOption || '');
+              }}
+              isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params}
+                  label="Background Music"
+                  placeholder="Select background music" 
+                  fullWidth
+                />
+              )}
+            />
             
-            {/* Entry Sound */}
-            <Grid item xs={12}>
-              <Combobox value={formData.entrySound} onChange={(value) => onChange('entrySound', value)}>
-                <div className="relative mt-1">
-                  <Combobox.Input
-                    className="w-full border rounded p-2"
-                    placeholder="Entry Sound"
-                    displayValue={(file: string) => file}
-                    onChange={(e) => setEntrySoundSearchQuery(e.target.value)}
-                  />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </Combobox.Button>
-                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 shadow-lg z-10">
-                    {filteredAudioFiles.entrySound.length === 0 ? (
-                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                        Nothing found.
-                      </div>
-                    ) : (
-                      filteredAudioFiles.entrySound.map(file => (
-                        <Combobox.Option
-                          key={file}
-                          value={file}
-                          className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-indigo-600 text-white' : 'text-gray-900'
-                            }`
-                          }
-                        >
-                          {file}
-                        </Combobox.Option>
-                      ))
-                    )}
-                  </Combobox.Options>
-                </div>
-              </Combobox>
-            </Grid>
+            {/* Entry Sound Autocomplete */}
+            <Autocomplete<string | null>
+              options={audioFiles}
+              getOptionLabel={(option: string | null) => option || ''}
+              value={formData.entrySound || null}
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+                onChange('entrySound', selectedOption || '');
+              }}
+              isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params}
+                  label="Entry Sound"
+                  placeholder="Select entry sound" 
+                  fullWidth
+                />
+              )}
+            />
             
-            {/* Image URL */}
-            <Grid item xs={12}>
-              <Combobox value={formData.imageUrl} onChange={(value) => onChange('imageUrl', value)}>
-                <div className="relative mt-1">
-                  <Combobox.Input
-                    className="w-full border rounded p-2"
-                    placeholder="Image URL"
-                    displayValue={(file: string) => file}
-                    onChange={(e) => setImageSearchQuery(e.target.value)}
+            {/* Image URL Autocomplete */}
+            <Autocomplete<string | null>
+              options={imageFiles}
+              getOptionLabel={(option: string | null) => option || ''}
+              value={formData.imageUrl || null}
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+                onChange('imageUrl', selectedOption || '');
+              }}
+              isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params}
+                  label="Image URL"
+                  placeholder="Select an image" 
+                  fullWidth
+                />
+              )}
+            />
+            
+            {/* Connected Locations Autocomplete - Multiple Selection */}
+            <Autocomplete
+              multiple
+              options={locations.filter(loc => loc.id !== formData.parentLocationId)}
+              getOptionLabel={(option: CustomLocation) => option.name}
+              value={selectedConnectedLocations}
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOptions: CustomLocation[]) => {
+                onChange('connectedLocations', selectedOptions.map(opt => opt.id));
+              }}
+              isOptionEqualToValue={(option: CustomLocation, value: CustomLocation) => option.id === value.id}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params}
+                  label="Connected Locations"
+                  placeholder="Select connected locations" 
+                  fullWidth
+                />
+              )}
+              renderTags={(tagValue: CustomLocation[], getTagProps) =>
+                tagValue.map((option: CustomLocation, index: number) => (
+                  <Chip 
+                    label={option.name} 
+                    {...getTagProps({ index })} 
+                    key={option.id}
                   />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </Combobox.Button>
-                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 shadow-lg z-10">
-                    {filteredImageFiles.length === 0 ? (
-                      <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                        Nothing found.
-                      </div>
-                    ) : (
-                      filteredImageFiles.map(file => (
-                        <Combobox.Option
-                          key={file}
-                          value={file}
-                          className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-indigo-600 text-white' : 'text-gray-900'
-                            }`
-                          }
-                        >
-                          {file}
-                        </Combobox.Option>
-                      ))
-                    )}
-                  </Combobox.Options>
-                </div>
-              </Combobox>
-            </Grid>
-          </Grid>
+                ))
+              }
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary">Save</Button>
+          <Button onPress={onClose}>Cancel</Button>
+          <Button 
+            onPress={handleSubmit} 
+            isDisabled={!formData.name}
+          >
+            Save
+          </Button>
         </DialogActions>
       </form>
     </Dialog>

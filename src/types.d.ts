@@ -4,3 +4,12 @@ interface Window {
 }
 
 // Other type declarations can go here 
+
+interface SvgProps {
+  className?: string;
+  fill?: string;
+  // Add other potential SVG props if needed
+}
+
+// Add an empty export to ensure this file is treated as a module
+export {}; 

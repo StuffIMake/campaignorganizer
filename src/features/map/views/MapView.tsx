@@ -1,13 +1,12 @@
 import React from 'react';
-import { Box, Paper, Grid, Typography } from '../../../components/ui';
 import { LocationMap, LocationSidebar, MapControls, EditLocationDialog, LocationDetails } from '../components';
 import { useMap, useMapInteractions, useEntityDialogs } from '../hooks';
 import { PDFViewerDialog } from '../../../components/PDFViewerDialog';
 import { useStore } from '../../../store';
 
 export const MapView: React.FC = () => {
-  // Use custom hooks for map functionality
-  const { 
+  // --- Hooks ---
+  const {
     locations,
     characters,
     combats,
@@ -18,13 +17,11 @@ export const MapView: React.FC = () => {
     editMode,
     editingLocation,
     showEditDialog,
-    detailsTab,
     isPdf,
     pdfViewerOpen,
     setPdfViewerOpen,
     currentPdfAsset,
     handleLocationSelect,
-    handleAssetImport,
     toggleEditMode,
     handleSaveData,
     handleUpdateLocation,
@@ -34,106 +31,97 @@ export const MapView: React.FC = () => {
     setShowDetails,
     setShowEditDialog
   } = useMap();
-  
-  // Map interaction handlers
+
   const {
+    mapContainerRef,
     handleMapClick,
     handleDragOver,
     handleDrop,
-    handleCharacterDragStart,
-    handleLocationDrop
   } = useMapInteractions({
     editMode,
     selectedLocation,
     onLocationUpdate: handleUpdateLocation
   });
-  
-  // Entity dialog handlers for characters and combats
+
   const {
-    characterDialogOpen,
-    combatDialogOpen,
-    selectedCharacter,
-    selectedCombat,
     handleCharacterClick,
     handleCombatClick,
-    handleStartCombat,
-    handleCloseCharacterDialog,
-    handleCloseCombatDialog,
-    getCharacterTypeIcon,
-    formatCharacterType,
-    getCharacterTypeColor
   } = useEntityDialogs();
 
-  // Get the actual store playTrack function
-  const { playTrack } = useStore.getState();
+  const playTrack = useStore((state) => state.playTrack);
 
+  // --- Render using modern design language ---
   return (
-    <Box className="h-full flex flex-col p-0 overflow-hidden">
-      <Paper className="flex flex-col flex-grow h-full overflow-hidden rounded-none">
-        <Grid container className="flex-grow h-full overflow-hidden">
-          {/* Left sidebar for location hierarchy */}
-          <Grid item xs={3} className="border-right h-full flex flex-col overflow-hidden">
-            <Box className="flex flex-col h-full overflow-hidden">
-              <Typography variant="h6" className="p-4 bg-gray-100 dark:bg-gray-800">
-                Locations
-              </Typography>
-              <LocationSidebar
-                locations={locations}
-                selectedLocation={selectedLocation}
-                onLocationSelect={handleLocationSelect}
-                getAllTopLevelLocations={getAllTopLevelLocations}
-                getSublocationsByParentId={getSublocationsByParentId}
-              />
-            </Box>
-          </Grid>
-          
-          {/* Center - Map area */}
-          <Grid item xs={showDetails ? 6 : 9} className="relative h-full overflow-hidden">
-            <Box className="relative flex flex-col h-full overflow-hidden">
-              <LocationMap
-                selectedLocation={selectedLocation}
-                onLocationSelect={handleLocationSelect}
-                getSublocationsByParentId={getSublocationsByParentId}
-                locations={locations}
-                editMode={editMode}
-                onMapClick={handleMapClick}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onViewPdf={handleViewPdf}
-              />
-              
-              <MapControls
-                editMode={editMode}
-                onToggleEditMode={toggleEditMode}
-                onSave={handleSaveData}
-                onViewPdf={isPdf && selectedLocation?.imageUrl ? () => handleViewPdf() : undefined}
-                hasPdf={isPdf}
-                onOpenAssetManager={() => setShowAssetManager(true)}
-              />
-            </Box>
-          </Grid>
-          
-          {/* Right sidebar for location details */}
-          {showDetails && selectedLocation && (
-            <Grid item xs={3} className="border-left h-full flex flex-col overflow-hidden">
-              <LocationDetails
-                location={selectedLocation}
-                locations={locations}
-                characters={characters}
-                combats={combats}
-                onBack={() => setShowDetails(false)} 
-                onLocationSelect={handleLocationSelect}
-                playTrack={playTrack}
-                onCharacterClick={handleCharacterClick}
-                onCombatClick={handleCombatClick}
-              />
-            </Grid>
-          )}
-        </Grid>
-      </Paper>
-      
-      {/* Edit Location Dialog */}
-      {showEditDialog && (
+    <div className="h-full w-full flex flex-col">
+      {/* Page header with gradient text effect */}
+      <div className="p-4 border-b border-border-DEFAULT/20 bg-background-surface/30">
+        <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">
+          World Map
+        </h1>
+      </div>
+
+      {/* Main content area - full screen width and height */}
+      <div className="flex-grow flex overflow-hidden">
+        {/* Left Sidebar - Fixed width sidebar */}
+        <div className="w-64 min-w-64 border-r border-border-DEFAULT/20 flex flex-col overflow-hidden bg-background-elevated/20">
+          <div className="p-3 bg-background-surface/30 border-b border-border-DEFAULT/20">
+            <h2 className="text-lg font-display font-semibold text-text-primary">Locations</h2>
+          </div>
+          <div className="flex-grow overflow-auto">
+            <LocationSidebar
+              locations={locations}
+              selectedLocation={selectedLocation}
+              onLocationSelect={handleLocationSelect}
+              getAllTopLevelLocations={getAllTopLevelLocations}
+              getSublocationsByParentId={getSublocationsByParentId}
+            />
+          </div>
+        </div>
+
+        {/* Center - Map Area - Takes all available space */}
+        <div className="flex-grow relative overflow-hidden">
+          <LocationMap
+            selectedLocation={selectedLocation}
+            onLocationSelect={handleLocationSelect}
+            getSublocationsByParentId={getSublocationsByParentId}
+            locations={locations}
+            editMode={editMode}
+            onMapClick={handleMapClick}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onViewPdf={handleViewPdf}
+            mapContainerRef={mapContainerRef}
+          />
+          <MapControls
+            editMode={editMode}
+            onToggleEditMode={toggleEditMode}
+            onSave={handleSaveData}
+            onViewPdf={isPdf && selectedLocation?.imageUrl ? () => handleViewPdf() : undefined}
+            hasPdf={isPdf}
+            onOpenAssetManager={() => setShowAssetManager(true)}
+          />
+        </div>
+
+        {/* Right Sidebar - Fixed width when shown */}
+        {selectedLocation && showDetails && (
+          <div className="w-72 min-w-72 border-l border-border-DEFAULT/20 overflow-hidden bg-background-elevated/20">
+            <LocationDetails
+              location={selectedLocation}
+              locations={locations}
+              characters={characters}
+              combats={combats}
+              onBack={() => setShowDetails(false)}
+              onLocationSelect={handleLocationSelect}
+              playTrack={playTrack}
+              onCharacterClick={handleCharacterClick}
+              onCombatClick={handleCombatClick}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Dialogs */}
+      {showEditDialog && editingLocation && (
         <EditLocationDialog
           open={showEditDialog}
           onClose={() => setShowEditDialog(false)}
@@ -142,8 +130,7 @@ export const MapView: React.FC = () => {
           locations={locations}
         />
       )}
-      
-      {/* PDF Viewer Dialog */}
+
       {pdfViewerOpen && currentPdfAsset && (
         <PDFViewerDialog
           open={pdfViewerOpen}
@@ -151,6 +138,12 @@ export const MapView: React.FC = () => {
           assetName={currentPdfAsset}
         />
       )}
-    </Box>
+    </div>
   );
-}; 
+};
+
+// Ensure component has a display name for React DevTools
+MapView.displayName = 'MapView';
+
+// Export as default if it's the primary export, otherwise keep named export
+// export default MapView; // Uncomment if this should be the default export 

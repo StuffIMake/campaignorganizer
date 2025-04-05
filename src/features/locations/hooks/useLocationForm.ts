@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CustomLocation } from '../../../store';
+import { MapPosition } from '../../../types/location';
 
 interface LocationFormData {
   name: string;
@@ -13,6 +14,23 @@ interface LocationFormData {
   mixWithParent: boolean;
   connectedLocations: string[];
 }
+
+// Helper function to format coordinates for API
+const formatCoordinatesForAPI = (coords: [number | string, number | string]): [number, number] => {
+  return [
+    typeof coords[0] === 'string' ? parseFloat(coords[0]) || 0 : coords[0],
+    typeof coords[1] === 'string' ? parseFloat(coords[1]) || 0 : coords[1]
+  ];
+};
+
+// Helper function to convert any coordinate format to form format
+const getFormCoordinates = (coordinates?: MapPosition | [number, number]): [number | string, number | string] => {
+  if (!coordinates) return [0, 0];
+  if (Array.isArray(coordinates)) {
+    return coordinates;
+  }
+  return [coordinates.x, coordinates.y];
+};
 
 export const useLocationForm = (onAdd: (location: Partial<CustomLocation>) => void, onUpdate: (id: string, location: Partial<CustomLocation>) => void) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -67,9 +85,7 @@ export const useLocationForm = (onAdd: (location: Partial<CustomLocation>) => vo
       entrySound: formData.entrySound || undefined,
       imageUrl: formData.imageUrl || undefined,
       descriptionType: formData.descriptionType,
-      coordinates: typeof formData.coordinates[0] === 'number' && typeof formData.coordinates[1] === 'number' 
-        ? formData.coordinates as [number, number] 
-        : [0, 0],
+      coordinates: formatCoordinatesForAPI(formData.coordinates),
       parentLocationId: formData.parentLocationId || undefined,
       mixWithParent: formData.mixWithParent,
       connectedLocations: formData.connectedLocations.length > 0 ? formData.connectedLocations : undefined
@@ -89,7 +105,7 @@ export const useLocationForm = (onAdd: (location: Partial<CustomLocation>) => vo
       imageUrl: location.imageUrl || '',
       descriptionType: location.descriptionType || 'markdown',
       parentLocationId: location.parentLocationId || '',
-      coordinates: location.coordinates || [0, 0],
+      coordinates: getFormCoordinates(location.coordinates),
       mixWithParent: location.mixWithParent || false,
       connectedLocations: location.connectedLocations || []
     });
@@ -105,9 +121,7 @@ export const useLocationForm = (onAdd: (location: Partial<CustomLocation>) => vo
         entrySound: formData.entrySound || undefined,
         imageUrl: formData.imageUrl || undefined,
         descriptionType: formData.descriptionType,
-        coordinates: typeof formData.coordinates[0] === 'number' && typeof formData.coordinates[1] === 'number' 
-          ? formData.coordinates as [number, number] 
-          : [0, 0],
+        coordinates: formatCoordinatesForAPI(formData.coordinates),
         parentLocationId: formData.parentLocationId || undefined,
         mixWithParent: formData.mixWithParent,
         connectedLocations: formData.connectedLocations.length > 0 ? formData.connectedLocations : undefined

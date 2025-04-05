@@ -1,42 +1,32 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
+import { Item } from 'react-stately';
 
-interface MenuItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+// Keep the props simple - just pass through to Item
+interface MenuItemProps {
   children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
-  selected?: boolean;
-  value?: string | number | readonly string[];
+  value: string | number; // The selection value
+  textValue?: string; // Optional text for typeahead/search
 }
 
-const MenuItem = forwardRef<HTMLLIElement, MenuItemProps>(({
-  children,
-  className = '',
-  disabled = false,
-  selected = false,
-  value,
-  ...props
-}, ref) => {
+// React Stately's collection system identifies items by their key
+// The conventional pattern is to use a data attribute to store the value
+const MenuItem = ({ children, value, textValue, ...otherProps }: MenuItemProps) => {
+  // Using data attributes to pass the value through to the rendered item
   return (
-    <li
-      ref={ref}
-      className={`
-        px-4 py-2
-        cursor-pointer
-        text-sm
-        ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}
-        ${selected ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300' : 'text-slate-900 dark:text-white'}
-        ${className}
-      `}
-      data-value={value}
-      role="option"
-      aria-disabled={disabled}
-      aria-selected={selected}
-      {...props}
+    <Item 
+      {...otherProps}
+      // Use stringified value as the item's data-value attribute
+      // This will be used by the Select component to identify the selected item
+      data-value={String(value)}
+      // Key for React's virtual DOM reconciliation 
+      key={String(value)}
+      // Text value for typeahead/searching in the dropdown
+      textValue={textValue ?? (typeof children === 'string' ? children : String(value))}
     >
       {children}
-    </li>
+    </Item>
   );
-});
+};
 
 MenuItem.displayName = 'MenuItem';
 

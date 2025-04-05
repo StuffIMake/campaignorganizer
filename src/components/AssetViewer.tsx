@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AssetManager } from '../services/assetManager';
 import PDFViewer from './PDFViewer';
+import { Box, CircularProgress } from './ui';
 
 interface AssetViewerProps {
   assetName: string;
@@ -70,15 +71,13 @@ const AssetViewer: React.FC<AssetViewerProps> = ({
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        width,
-        height: height || '200px',
-        border: '1px solid rgba(0, 0, 0, 0.12)',
-        borderRadius: 1
-      }}>
+      <Box 
+        className="flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded" 
+        style={{ 
+          width, 
+          height: height || '200px'
+        }}
+      >
         <CircularProgress size={30} />
       </Box>
     );
@@ -86,13 +85,10 @@ const AssetViewer: React.FC<AssetViewerProps> = ({
 
   if (error || !assetUrl || !detectedType) {
     return (
-      <Box sx={{ 
-        p: 2, 
-        width, 
-        height: 'auto', 
-        color: 'text.secondary',
-        fontSize: '0.875rem'
-      }}>
+      <Box 
+        className="p-2 text-gray-500 text-sm" 
+        style={{ width, height: 'auto' }}
+      >
         {error || `Could not load asset: ${assetName}`}
       </Box>
     );
@@ -104,17 +100,15 @@ const AssetViewer: React.FC<AssetViewerProps> = ({
 
   // For images
   return (
-    <Box 
-      component="img"
+    <img
       src={assetUrl}
       alt={assetName}
-      sx={{
-        display: 'block',
+      className="block rounded"
+      style={{
         width,
         height,
         maxHeight,
-        objectFit: fit,
-        borderRadius: 1
+        objectFit: fit
       }}
       onError={() => setError(`Failed to load image: ${assetName}`)}
     />

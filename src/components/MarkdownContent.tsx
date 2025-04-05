@@ -119,17 +119,6 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({
   if (sx.WebkitLineClamp) inlineStyle.WebkitLineClamp = sx.WebkitLineClamp;
   if (sx.WebkitBoxOrient) inlineStyle.WebkitBoxOrient = sx.WebkitBoxOrient;
 
-  // Add debugging info if requested
-  if (debug) {
-    console.log('MarkdownContent debug:', {
-      content: content?.substring(0, 100) + '...',
-      markdownDetected,
-      reactMarkdownAvailable: typeof ReactMarkdown === 'function',
-      reactMarkdownType: typeof ReactMarkdown,
-      window: window.ReactMarkdownLoaded ? 'ReactMarkdown is loaded globally' : 'No global ReactMarkdown',
-    });
-  }
-
   // Use our simple renderer if ReactMarkdown is unavailable
   if (useSimpleRenderer) {
     return (

@@ -1,4 +1,10 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useId, useRef, createContext, useContext, useEffect } from 'react';
+import { useOverlay, useModal, useDialog, FocusScope } from 'react-aria';
+import type { AriaDialogProps } from 'react-aria';
+import ReactDOM from 'react-dom';
+
+// Create a context to pass down titleProps
+const DialogContext = createContext<Record<string, any> | null>(null);
 
 interface DialogProps {
   open: boolean;
@@ -7,6 +13,7 @@ interface DialogProps {
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
   fullWidth?: boolean;
   className?: string;
+  title?: string;
 }
 
 export const Dialog: React.FC<DialogProps> = ({ 
@@ -16,7 +23,40 @@ export const Dialog: React.FC<DialogProps> = ({
   maxWidth = 'sm',
   fullWidth = false,
   className = '',
+  title
 }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  
+  // Disable body scroll when dialog is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  // Hook to handle overlay interactions (modal state, closing)
+  const { overlayProps, underlayProps } = useOverlay(
+    { isOpen: open, onClose, isDismissable: true },
+    ref
+  );
+
+  // Hook to make the dialog modal (prevents interaction outside)
+  const { modalProps } = useModal();
+
+  // Prepare props for useDialog
+  const dialogHookProps: AriaDialogProps = {
+    role: 'dialog',
+    ...(title && { 'aria-label': title })
+  };
+
+  // Hook for dialog specific ARIA attributes
+  const { dialogProps, titleProps } = useDialog(dialogHookProps, ref);
+
   if (!open) return null;
   
   // Calculate max width based on the prop
@@ -32,32 +72,47 @@ export const Dialog: React.FC<DialogProps> = ({
     }
   };
   
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop with animated opacity */}
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-out"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      
-      {/* Dialog positioning */}
-      <div className="flex min-h-full items-center justify-center p-4 text-center sm:items-center sm:p-0">
-        {/* Dialog panel with animations */}
+  const dialogContent = (
+    <DialogContext.Provider value={titleProps}>
+      {/* Portal the dialog to the body to avoid any container constraints */}
+      <div className="dialog-overlay fixed inset-0 z-[10000] overflow-hidden">
+        {/* Semi-transparent backdrop */}
         <div 
-          className={`
-            relative transform overflow-hidden rounded-lg bg-white dark:bg-slate-900 
-            text-left shadow-xl transition-all duration-300 ease-out
-            ${getMaxWidth()} ${fullWidth ? 'w-full' : ''}
-            border border-slate-200 dark:border-slate-700
-            ${className}
-          `}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {children}
+          className="fixed inset-0 w-screen h-screen bg-black/70 backdrop-blur-md transition-opacity duration-300 ease-out"
+          onClick={onClose}
+        />
+        
+        {/* Centered dialog container */}
+        <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+          <FocusScope contain restoreFocus autoFocus>
+            <div 
+              {...modalProps}
+              {...dialogProps}
+              ref={ref}
+              className={`
+                relative max-h-[90vh] overflow-hidden rounded-2xl 
+                bg-white dark:bg-slate-900 
+                text-left shadow-2xl transition-all duration-300 ease-out
+                ${getMaxWidth()} ${fullWidth ? 'w-full' : ''}
+                border border-slate-200 dark:border-slate-700
+                animate-dialog-appear
+                z-[10001]
+                ${className}
+              `}
+              onClick={e => e.stopPropagation()}
+            >
+              {children}
+            </div>
+          </FocusScope>
         </div>
       </div>
-    </div>
+    </DialogContext.Provider>
+  );
+
+  // Use a portal to render the dialog at the document body level
+  return ReactDOM.createPortal(
+    dialogContent,
+    document.body
   );
 };
 
@@ -70,8 +125,11 @@ interface DialogTitleProps {
 export const DialogTitle: React.FC<DialogTitleProps> = ({ 
   children, 
   onClose, 
-  className = '' 
+  className = '',
 }) => {
+  // Get titleProps from context
+  const titleProps = useContext(DialogContext);
+
   return (
     <div className={`
       px-6 py-4 border-b border-slate-200 dark:border-slate-700
@@ -79,7 +137,10 @@ export const DialogTitle: React.FC<DialogTitleProps> = ({
       flex items-center justify-between
       ${className}
     `}>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+      <h3 
+        {...titleProps}
+        className="text-lg font-semibold text-slate-900 dark:text-white"
+      >
         {children}
       </h3>
       
@@ -100,6 +161,9 @@ export const DialogTitle: React.FC<DialogTitleProps> = ({
   );
 };
 
+// Add display name for reliable type checking
+DialogTitle.displayName = 'DialogTitle';
+
 interface DialogContentProps {
   children: ReactNode;
   className?: string;
@@ -113,10 +177,10 @@ export const DialogContent: React.FC<DialogContentProps> = ({
 }) => {
   return (
     <div className={`
-      px-6 py-4
+      px-6 py-4 overflow-y-auto
       ${dividers ? 'border-y border-slate-200 dark:border-slate-700' : ''}
       ${className}
-    `}>
+    `} style={{ maxHeight: 'calc(70vh)', overflowY: 'auto' }}>
       {children}
     </div>
   );

@@ -1,8 +1,5 @@
 import React from 'react';
 
-// Add console log to check if this component is loaded
-console.log('FormControlLabel component is being loaded');
-
 interface FormControlLabelProps {
   control: React.ReactElement;
   label: React.ReactNode;

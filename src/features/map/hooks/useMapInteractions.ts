@@ -1,5 +1,12 @@
 import { useRef, useState } from 'react';
 import { CustomLocation } from '../../../store';
+import { useStore } from '../../../store';
+
+// Extended drag event type with our custom properties
+interface ExtendedDragEvent extends React.DragEvent<HTMLDivElement> {
+  locationX?: number;
+  locationY?: number;
+}
 
 interface UseMapInteractionsProps {
   editMode: boolean;
@@ -34,38 +41,67 @@ export const useMapInteractions = ({
     // or other map interactions in edit mode
   };
   
-  // Handle drag over for character dragging
+  // Handle drag over for allowing drop operations
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Allow drop
+    if (!editMode) return;
+    e.preventDefault(); // This is required to allow dropping
+  };
+  
+  // Handle dropping a location on the map
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     
-    if (isDragging) {
-      // Update visual feedback during drag if needed
+    // Check if the mapContainerRef is valid
+    if (!mapContainerRef || !mapContainerRef.current) {
+      console.error('Map container reference is null or not initialized');
+      return;
+    }
+    
+    // Get the dropped location ID
+    const locationId = e.dataTransfer.getData('locationId');
+    if (!locationId) return;
+    
+    // Calculate drop position as percentage of container dimensions
+    const rect = mapContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width);
+    const y = ((e.clientY) / rect.height);
+    
+    // Log the drop coordinates
+    console.log(`Location ${locationId} dropped at ${x.toFixed(3)}, ${y.toFixed(3)}`);
+    
+    // Find the location to update using the store
+    const { locations } = useStore.getState();
+    const locationToUpdate = locations.find(loc => loc.id === locationId);
+    
+    if (locationToUpdate) {
+      // Create updated location with new coordinates
+      const updatedLocation = {
+        ...locationToUpdate,
+        coordinates: [x, y] as [number, number]
+      };
+      
+      // Call onLocationUpdate with the complete updated location
+      if (onLocationUpdate) {
+        onLocationUpdate(updatedLocation);
+      }
+    } else {
+      console.warn(`Could not find location with ID ${locationId}`);
     }
   };
   
-  // Handle dropping a character on the map or a location
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+  // Helper function to find a sublocation by ID recursively
+  const getSublocationById = (parent: CustomLocation, id: string): CustomLocation | null => {
+    // Check direct sublocations
+    const directSublocation = parent.sublocations?.find(loc => loc.id === id);
+    if (directSublocation) return directSublocation;
     
-    if (!draggedCharacterId || !selectedLocation) return;
+    // Recursively check nested sublocations
+    for (const child of parent.sublocations || []) {
+      const found = getSublocationById(child, id);
+      if (found) return found;
+    }
     
-    // Get the map container dimensions
-    const mapContainer = mapContainerRef.current;
-    if (!mapContainer) return;
-    
-    const rect = mapContainer.getBoundingClientRect();
-    
-    // Calculate drop position as percentages
-    const dropX = (e.clientX - rect.left) / rect.width;
-    const dropY = (e.clientY - rect.top) / rect.height;
-    
-    console.log(`Character ${draggedCharacterId} dropped at position: ${dropX.toFixed(2)}, ${dropY.toFixed(2)}`);
-    
-    // Reset drag state
-    setIsDragging(false);
-    setDraggedCharacterId(null);
-    
-    // Here we would implement logic to update character position on the map
+    return null;
   };
   
   // Handle starting character drag

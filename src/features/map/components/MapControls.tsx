@@ -1,5 +1,4 @@
 import React from 'react';
-import { Box, Fab, Tooltip, Paper, Typography } from '../../../components/ui';
 import { 
   EditIcon, 
   SaveIcon,
@@ -27,81 +26,61 @@ export const MapControls: React.FC<MapControlsProps> = ({
 }) => {
   return (
     <>
-      {/* Edit mode indicator */}
-      {editMode && (
-        <Paper
-          className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 
-                    bg-black/80 text-white rounded flex items-center gap-2"
-        >
-          <EditIcon className="text-sm" />
-          <Typography variant="subtitle2">Edit Mode Active</Typography>
-        </Paper>
-      )}
-
-      {/* Edit mode toggle button */}
-      <Tooltip
+      {/* Edit Mode Toggle Button */}
+      <button
+        className={`absolute bottom-4 right-4 z-50 
+          h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all 
+          ${editMode 
+            ? 'bg-secondary-DEFAULT hover:bg-secondary-dark text-white' 
+            : 'glass-effect-strong hover:bg-background-elevated/50'
+          }`}
+        onClick={onToggleEditMode}
+        aria-label={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
         title={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-        placement="left"
       >
-        <Fab
-          color={editMode ? "secondary" : "primary"}
-          aria-label="edit mode"
-          className="absolute bottom-4 right-4 z-50"
-          onClick={onToggleEditMode}
-        >
-          <EditIcon />
-        </Fab>
-      </Tooltip>
-      
-      {/* Save button when in edit mode */}
+        <EditIcon className="h-6 w-6" />
+      </button>
+
+      {/* Save Button - Only visible in edit mode */}
       {editMode && (
-        <Tooltip
-          title="Save all changes"
-          placement="left"
+        <button
+          className="absolute bottom-4 right-20 z-50 
+            h-14 w-14 rounded-full flex items-center justify-center shadow-lg
+            bg-primary-DEFAULT hover:bg-primary-dark text-white transition-all"
+          onClick={onSave}
+          aria-label="Save Changes"
+          title="Save Changes"
         >
-          <Fab
-            color="success"
-            aria-label="save changes"
-            className="absolute bottom-4 right-20 z-50"
-            onClick={onSave}
-          >
-            <SaveIcon />
-          </Fab>
-        </Tooltip>
-      )}
-      
-      {/* PDF viewer button when available */}
-      {hasPdf && onViewPdf && (
-        <Tooltip
-          title="View PDF Document"
-          placement="left"
-        >
-          <Fab
-            color="info"
-            aria-label="view pdf"
-            className="absolute bottom-20 right-4 z-50"
-            onClick={onViewPdf}
-          >
-            <DownloadIcon />
-          </Fab>
-        </Tooltip>
+          <SaveIcon className="h-6 w-6" />
+        </button>
       )}
 
-      {/* Asset Manager button */}
-      {onOpenAssetManager && (
-        <Tooltip
-          title="Open Asset Manager"
-          placement="left"
+      {/* PDF Viewer Button - Only visible when a PDF is available */}
+      {hasPdf && onViewPdf && (
+        <button
+          className="absolute bottom-20 right-4 z-50 
+            h-14 w-14 rounded-full flex items-center justify-center shadow-lg
+            glass-effect-strong hover:bg-background-elevated/50 transition-all"
+          onClick={onViewPdf}
+          aria-label="View PDF"
+          title="View PDF"
         >
-          <Fab
-            color="info"
-            aria-label="open asset manager"
-            className="absolute bottom-36 right-4 z-50"
-            onClick={onOpenAssetManager}
-          >
-            <CloudUploadIcon />
-          </Fab>
-        </Tooltip>
+          <ImageIcon className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Asset Manager Button */}
+      {onOpenAssetManager && (
+        <button
+          className="absolute bottom-36 right-4 z-50 
+            h-14 w-14 rounded-full flex items-center justify-center shadow-lg
+            glass-effect-strong hover:bg-background-elevated/50 transition-all"
+          onClick={onOpenAssetManager}
+          aria-label="Open Asset Manager"
+          title="Open Asset Manager"
+        >
+          <CloudUploadIcon className="h-6 w-6" />
+        </button>
       )}
     </>
   );

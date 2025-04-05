@@ -156,13 +156,17 @@ const ListItem = forwardRef<HTMLLIElement, ListItemProps>(({
 ListItem.displayName = 'ListItem';
 
 // ListItemButton is a clickable ListItem
-interface ListItemButtonProps extends Omit<ListItemProps, 'divider'> {
-  component?: React.ElementType;
+interface ListItemButtonProps extends Omit<React.HTMLAttributes<HTMLButtonElement>, 'onClick'> {
+  children: React.ReactNode;
+  className?: string;
+  selected?: boolean;
+  disabled?: boolean;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  sx?: Record<string, any>;
 }
 
-const ListItemButton = forwardRef<HTMLLIElement, ListItemButtonProps>(({
+const ListItemButton = forwardRef<HTMLButtonElement, ListItemButtonProps>(({
   children,
-  component: Component = 'div',
   className = '',
   selected = false,
   disabled = false,
@@ -170,24 +174,39 @@ const ListItemButton = forwardRef<HTMLLIElement, ListItemButtonProps>(({
   sx = {},
   ...props
 }, ref) => {
+  // Convert Material UI style sx object to inline style object
+  const inlineStyle: React.CSSProperties = {};
+
+  // Build class names for the button
+  const selectedClass = selected ? 'bg-primary-600/20' : '';
+  const baseClasses = 'flex items-center w-full px-4 py-2 text-left transition-colors';
+  const hoverClasses = 'hover:bg-slate-800/80';
+  const activeClasses = 'active:bg-slate-700/50';
+  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
+
   return (
-    <ListItem
+    <button
       ref={ref}
+      type="button"
+      role="button"
+      aria-disabled={disabled}
+      disabled={disabled}
       className={`
-        cursor-pointer
-        hover:bg-slate-800/80
-        active:bg-slate-700/50
+        ${baseClasses}
+        ${selectedClass}
+        ${disabled ? '' : hoverClasses} ${disabled ? '' : activeClasses}
+        ${disabledClasses}
         ${className}
       `}
-      selected={selected}
-      disabled={disabled}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      style={{
+        ...props.style,
+        ...inlineStyle
+      }}
       {...props}
     >
-      <Component className="flex items-center w-full">
-        {children}
-      </Component>
-    </ListItem>
+      {children}
+    </button>
   );
 });
 

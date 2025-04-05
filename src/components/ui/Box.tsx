@@ -12,9 +12,11 @@ const Box = forwardRef<HTMLDivElement, BoxProps>(({
   component: Component = 'div',
   sx = {},
   className = '',
-  ...props
+  // ...rest captures all props NOT explicitly destructured above
+  ...rest 
 }, ref) => {
-  // Convert sx props to inline styles and class names
+
+  // Convert sx props (using the sx object directly) to inline styles and class names
   const inlineStyle: React.CSSProperties = {};
   let generatedClasses = '';
   
@@ -127,15 +129,20 @@ const Box = forwardRef<HTMLDivElement, BoxProps>(({
   if (sx.fontSize) inlineStyle.fontSize = sx.fontSize;
   if (sx.textAlign) inlineStyle.textAlign = sx.textAlign;
 
-  // Combine all class names
+  // Combine provided className with generated classes
   const allClassNames = `${className}${generatedClasses}`.trim();
   
   return (
     <Component
       ref={ref}
       className={allClassNames}
-      style={inlineStyle}
-      {...props}
+      style={{...inlineStyle, ...rest.style}} // Combine generated styles with passed styles
+      // Spread the remaining props (rest) onto the component
+      // This includes standard HTML attributes like 'id', 'aria-label', etc.
+      // but excludes 'children', 'component', 'sx', 'className' which were handled
+      {...rest}
+      // Ensure 'style' from rest doesn't overwrite className/sx styles by placing it last
+      // or merging style objects as done above
     >
       {children}
     </Component>

@@ -1,11 +1,7 @@
 import React from 'react';
 import { 
   Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  Box, 
-  IconButton, 
-  Typography 
+  IconButton
 } from './ui';
 import { CloseIcon } from '../assets/icons';
 import PDFViewer from './PDFViewer';
@@ -25,35 +21,32 @@ export const PDFViewerDialog: React.FC<PDFViewerDialogProps> = ({
     <Dialog 
       open={open} 
       onClose={onClose}
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth
-      className="rounded overflow-hidden"
+      className="pdf-fullscreen-dialog"
     >
-      <DialogTitle className="border-b border-gray-200 dark:border-gray-700 p-2 bg-gray-100 dark:bg-gray-900">
-        <Box className="flex justify-between items-center">
-          <Typography variant="subtitle1" component="div">
-            {assetName}
-          </Typography>
-          <IconButton 
-            onClick={onClose}
-            size="small"
-            aria-label="close"
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent className="p-0 h-[75vh]">
-        {assetName && (
-          <PDFViewer 
-            assetName={assetName} 
-            height="100%" 
-            width="100%" 
-            allowDownload={true}
-            showTopBar={false}
-          />
-        )}
-      </DialogContent>
+      <div className="relative h-full w-full bg-transparent">
+        <IconButton 
+          onClick={onClose}
+          size="small"
+          aria-label="close"
+          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white"
+        >
+          <CloseIcon />
+        </IconButton>
+        
+        <div className="h-screen w-full flex items-center justify-center">
+          {assetName && (
+            <PDFViewer 
+              assetName={assetName} 
+              height="95vh" 
+              width="95%" 
+              allowDownload={true}
+              showTopBar={false}
+            />
+          )}
+        </div>
+      </div>
     </Dialog>
   );
 };

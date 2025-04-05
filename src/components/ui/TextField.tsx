@@ -1,8 +1,11 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useRef } from 'react';
+import { useTextField } from 'react-aria';
+import type { AriaTextFieldProps } from 'react-aria';
+import { ReactNode } from 'react';
 
 // TextField props interface
-export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
-  label?: string;
+export interface TextFieldProps extends Omit<AriaTextFieldProps, 'label'> {
+  label?: React.ReactNode;
   helperText?: string;
   error?: boolean;
   fullWidth?: boolean;
@@ -10,24 +13,39 @@ export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInput
   InputProps?: {
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
   };
   size?: 'small' | 'medium' | 'large';
+  className?: string;
 }
 
-export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
-  label,
+export const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
   helperText,
   error = false,
   fullWidth = false,
   variant = 'outlined',
   className = '',
-  placeholder,
-  disabled = false,
-  required = false,
   InputProps,
   size = 'medium',
-  ...props
+  ...ariaProps
 }, ref) => {
+  // Map props for useTextField
+  const mappedProps: AriaTextFieldProps = {
+    ...ariaProps,
+    description: helperText,
+    errorMessage: helperText,
+    validationState: error ? 'invalid' : 'valid',
+  };
+
+  // Ref for the input element
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Call useTextField hook
+  const { labelProps, inputProps, descriptionProps, errorMessageProps } = useTextField(
+    mappedProps,
+    inputRef
+  );
+
   // Size classes
   const sizeMap = {
     small: {
@@ -66,8 +84,8 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
     ${error ? 'text-red-500' : 'text-slate-300'}
   `.trim();
   
-  // Helper text classes
-  const helperTextClasses = `
+  // Helper/Error text classes
+  const descriptionClasses = `
     ${sizeMap.helper}
     ${error ? 'text-red-500' : 'text-slate-400'}
   `.trim();
@@ -78,7 +96,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
     transition-all duration-200 ease-in-out
     focus:outline-none focus:ring-2 focus:ring-indigo-500/70 
     ${sizeMap.input}
-    ${disabled ? 'opacity-60 cursor-not-allowed' : ''}
+    ${ariaProps.isDisabled ? 'opacity-60 cursor-not-allowed' : ''}
     ${InputProps?.startAdornment ? 'pl-10' : ''}
     ${InputProps?.endAdornment ? 'pr-10' : ''}
   `.trim();
@@ -110,21 +128,28 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
   const startAdornmentClasses = `
     absolute left-3 top-1/2 transform -translate-y-1/2
     ${error ? 'text-red-500' : 'text-slate-400'}
-    ${disabled ? 'opacity-60' : ''}
+    ${ariaProps.isDisabled ? 'opacity-60' : ''}
   `.trim();
   
   const endAdornmentClasses = `
     absolute right-3 top-1/2 transform -translate-y-1/2
     ${error ? 'text-red-500' : 'text-slate-400'}
-    ${disabled ? 'opacity-60' : ''}
+    ${ariaProps.isDisabled ? 'opacity-60' : ''}
   `.trim();
   
+  // Extract potential inputProps passed via InputProps (optional chaining)
+  const nestedInputProps = InputProps?.inputProps || {};
+
+  // Use useImperativeHandle to forward the external ref to the input element
+  // This assumes the forwarded ref wants the input, not the outer div.
+  // If the outer div is needed, adjust this or use a different pattern.
+  React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+
   return (
-    <div className={containerClasses}>
-      {label && (
-        <label className={labelClasses}>
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+    <div className={containerClasses} /* ref={ref} - Removed if ref targets input */ >
+      {ariaProps.label && (
+        <label {...labelProps} className={labelClasses}>
+          {ariaProps.label}
         </label>
       )}
       
@@ -136,13 +161,10 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
         )}
         
         <input
-          ref={ref}
-          disabled={disabled}
-          placeholder={placeholder}
-          required={required}
+          {...inputProps}
+          {...nestedInputProps}
+          ref={inputRef}
           className={inputClasses}
-          aria-invalid={error}
-          {...props}
         />
         
         {InputProps?.endAdornment && (
@@ -152,9 +174,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(({
         )}
       </div>
       
-      {helperText && (
-        <p className={helperTextClasses}>{helperText}</p>
-      )}
+      {error && helperText ? (
+        <p {...errorMessageProps} className={descriptionClasses}>
+          {helperText}
+        </p>
+      ) : helperText ? (
+        <p {...descriptionProps} className={descriptionClasses}>
+          {helperText}
+        </p>
+      ) : null}
     </div>
   );
 });

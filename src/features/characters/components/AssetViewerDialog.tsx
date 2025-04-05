@@ -5,10 +5,13 @@ import {
   DialogContent, 
   DialogActions, 
   Button,
-  IconButton
+  IconButton,
+  Box
 } from '../../../components/ui';
 import { CloseIcon } from '../../../assets/icons';
 import MarkdownContent from '../../../components/MarkdownContent';
+import PDFViewer from '../../../components/PDFViewer';
+import { getPdfFilename } from '../../../utils/pdfUtils';
 
 interface AssetViewerDialogProps {
   pdfViewerOpen: boolean;
@@ -33,29 +36,32 @@ export const AssetViewerDialog: React.FC<AssetViewerDialogProps> = ({
       <Dialog 
         open={pdfViewerOpen} 
         onClose={onClose}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
+        className="pdf-fullscreen-dialog"
       >
-        <DialogTitle>
-          <div className="flex justify-between items-center">
-            <span>PDF Viewer</span>
-            <IconButton onClick={onClose}>
-              <CloseIcon />
-            </IconButton>
+        <div className="relative h-full w-full">
+          <IconButton 
+            onClick={onClose}
+            size="small"
+            aria-label="close"
+            className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white"
+          >
+            <CloseIcon />
+          </IconButton>
+          
+          <div className="h-screen w-full flex items-center justify-center">
+            {currentPdfAsset && (
+              <PDFViewer 
+                assetName={currentPdfAsset} 
+                height="95vh" 
+                width="95%" 
+                allowDownload={true}
+                showTopBar={false}
+              />
+            )}
           </div>
-        </DialogTitle>
-        <DialogContent>
-          <div style={{ height: '70vh' }}>
-            <iframe 
-              src={currentPdfAsset} 
-              style={{ width: '100%', height: '100%', border: 'none' }} 
-              title="PDF Viewer"
-            />
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Close</Button>
-        </DialogActions>
+        </div>
       </Dialog>
     );
   }
@@ -81,7 +87,7 @@ export const AssetViewerDialog: React.FC<AssetViewerDialogProps> = ({
           <MarkdownContent content={currentMarkdownContent} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Close</Button>
+          <Button onPress={onClose}>Close</Button>
         </DialogActions>
       </Dialog>
     );

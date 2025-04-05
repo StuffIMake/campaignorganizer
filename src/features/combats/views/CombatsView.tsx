@@ -11,22 +11,22 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
-  MenuItem,
   TextField,
   Select,
+  Item as SelectItem,
   List,
   ListItem,
   ListItemText,
   Checkbox,
   Chip,
   IconButton,
-  Autocomplete
+  Autocomplete,
 } from '../../../components/ui';
-import { AddIcon, RemoveIcon } from '../../../assets/icons';
+import { AddIcon, RemoveIcon, EditIcon, DeleteIcon } from '../../../assets/icons';
 import { CombatSearch, CombatCard } from '../components';
 import { useCombats, useCombatForm, EnemyInstance } from '../hooks';
-import { Combat, Item, Character } from '../../../store';
-import { Combobox } from '@headlessui/react';
+import { Combat, Item, Character, CustomLocation } from '../../../store';
+import type { CombatDifficulty } from '../../../types/combat';
 
 export const CombatsView: React.FC = () => {
   const { 
@@ -176,241 +176,175 @@ export const CombatsView: React.FC = () => {
     );
   }, [enemyCharacters, enemySearchQuery]);
   
-  // Render the location dropdown
+  // --- Handler to add a selected player character ---
+  const handleAddPlayer = (character: Character | null) => {
+    if (!character) return; // Do nothing if null is selected
+    
+    // Add character if not already present
+    setEditedCombat(prev => {
+      const currentPlayers = prev.playerCharacters || [];
+      if (!currentPlayers.some(p => p.id === character.id)) {
+        return { ...prev, playerCharacters: [...currentPlayers, character] };
+      }
+      return prev; // Return previous state if already added
+    });
+    // Autocomplete value is null, so it should reset itself
+  };
+  
+  // --- Handler to remove a player character ---
+  const handleRemovePlayer = (characterId: string) => {
+    setEditedCombat(prev => ({
+      ...prev,
+      playerCharacters: (prev.playerCharacters || []).filter(p => p.id !== characterId)
+    }));
+  };
+  
+  // Render the location dropdown using Autocomplete
   const renderLocationDropdown = () => (
-    <Box className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Location
-      </label>
-      <Combobox
-        value={editedCombat.locationId || ''}
-        onChange={(value: string) => handleFormChange('locationId', value)}
-      >
-        <div className="relative w-full">
-          <Combobox.Input
-            className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            onChange={(e) => setLocationSearchQuery(e.target.value)}
-            displayValue={(locationId: string) => 
-              locations.find(loc => loc.id === locationId)?.name || 'Select a location'
-            }
-          />
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <span className="w-5 h-5 text-gray-400" aria-hidden="true">▼</span>
-          </Combobox.Button>
-        </div>
-        <Combobox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700">
-          <Combobox.Option value="">
-            {({ active }) => (
-              <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                No Location
-              </div>
-            )}
-          </Combobox.Option>
-          {filteredLocations.map((location) => (
-            <Combobox.Option key={location.id} value={location.id}>
-              {({ active }) => (
-                <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                  {location.name}
-                </div>
-              )}
-            </Combobox.Option>
-          ))}
-        </Combobox.Options>
-      </Combobox>
-    </Box>
+    <Autocomplete<CustomLocation | null>
+      options={locations}
+      getOptionLabel={(option: CustomLocation | null) => option?.name || ''}
+      value={locations.find(loc => loc.id === editedCombat.locationId) || null}
+      onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: CustomLocation | null) => {
+        handleFormChange('locationId', selectedOption?.id || null);
+      }}
+      isOptionEqualToValue={(option: CustomLocation | null, value: CustomLocation | null) => option?.id === value?.id}
+      renderInput={(params: any) => (
+        <TextField 
+          {...params}
+          label="Location"
+          placeholder="Select a location" 
+        />
+      )}
+    />
   );
   
-  // Render the background music dropdown
+  // Render the background music dropdown using Autocomplete
   const renderBackgroundMusicDropdown = () => (
-    <Box className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Background Music
-      </label>
-      <Combobox
-        value={editedCombat.backgroundMusic || ''}
-        onChange={(value: string) => handleFormChange('backgroundMusic', value)}
-      >
-        <div className="relative w-full">
-          <Combobox.Input
-            className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            onChange={(e) => setBgMusicSearchQuery(e.target.value)}
-            displayValue={(value: string) => value || 'No background music'}
-          />
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <span className="w-5 h-5 text-gray-400" aria-hidden="true">▼</span>
-          </Combobox.Button>
-        </div>
-        <Combobox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700">
-          <Combobox.Option value="">
-            {({ active }) => (
-              <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                No background music
-              </div>
-            )}
-          </Combobox.Option>
-          {filteredBgMusicAssets.map((asset) => (
-            <Combobox.Option key={asset} value={asset}>
-              {({ active }) => (
-                <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                  {asset}
-                </div>
-              )}
-            </Combobox.Option>
-          ))}
-        </Combobox.Options>
-      </Combobox>
-    </Box>
+    <Autocomplete<string | null>
+      options={audioAssets}
+      getOptionLabel={(option: string | null) => option || ''}
+      value={editedCombat.backgroundMusic || null}
+      onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+        handleFormChange('backgroundMusic', selectedOption || null);
+      }}
+      isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+      renderInput={(params: any) => (
+        <TextField 
+          {...params} 
+          label="Background Music"
+          placeholder="Select background music" 
+        />
+      )}
+    />
   );
   
-  // Render the entry sound dropdown
+  // Render the entry sound dropdown using Autocomplete
   const renderEntrySoundDropdown = () => (
-    <Box className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Entry Sound
-      </label>
-      <Combobox
-        value={editedCombat.entrySound || ''}
-        onChange={(value: string) => handleFormChange('entrySound', value)}
-      >
-        <div className="relative w-full">
-          <Combobox.Input
-            className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            onChange={(e) => setEntrySoundSearchQuery(e.target.value)}
-            displayValue={(value: string) => value || 'No entry sound'}
-          />
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <span className="w-5 h-5 text-gray-400" aria-hidden="true">▼</span>
-          </Combobox.Button>
-        </div>
-        <Combobox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700">
-          <Combobox.Option value="">
-            {({ active }) => (
-              <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                No entry sound
-              </div>
-            )}
-          </Combobox.Option>
-          {filteredEntrySoundAssets.map((asset) => (
-            <Combobox.Option key={asset} value={asset}>
-              {({ active }) => (
-                <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                  {asset}
-                </div>
-              )}
-            </Combobox.Option>
-          ))}
-        </Combobox.Options>
-      </Combobox>
-    </Box>
+    <Autocomplete<string | null>
+      options={audioAssets}
+      getOptionLabel={(option: string | null) => option || ''}
+      value={editedCombat.entrySound || null}
+      onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+        handleFormChange('entrySound', selectedOption || null);
+      }}
+      isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+      renderInput={(params: any) => (
+        <TextField 
+          {...params} 
+          label="Entry Sound"
+          placeholder="Select entry sound" 
+        />
+      )}
+    />
   );
   
-  // Render the background image dropdown
+  // Render the background image dropdown using Autocomplete
   const renderImageDropdown = () => (
-    <Box className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Background Image
-      </label>
-      <Combobox
-        value={editedCombat.backgroundImage || ''}
-        onChange={(value: string) => handleFormChange('backgroundImage', value)}
-      >
-        <div className="relative w-full">
-          <Combobox.Input
-            className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            onChange={(e) => setImageSearchQuery(e.target.value)}
-            displayValue={(value: string) => value || 'No background image'}
-          />
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <span className="w-5 h-5 text-gray-400" aria-hidden="true">▼</span>
-          </Combobox.Button>
-        </div>
-        <Combobox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700">
-          <Combobox.Option value="">
-            {({ active }) => (
-              <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                No background image
-              </div>
-            )}
-          </Combobox.Option>
-          {filteredImageAssets.map((asset) => (
-            <Combobox.Option key={asset} value={asset}>
-              {({ active }) => (
-                <div className={`px-4 py-2 cursor-pointer ${active ? 'bg-primary-500 text-white' : ''}`}>
-                  {asset}
-                </div>
-              )}
-            </Combobox.Option>
-          ))}
-        </Combobox.Options>
-      </Combobox>
-    </Box>
-  );
-  
-  // Render the difficulty dropdown
-  const renderDifficultyDropdown = () => (
-    <FormControl fullWidth className="mb-4">
-      <InputLabel>Difficulty</InputLabel>
-      <Select
-        value={editedCombat.difficulty || 'medium'}
-        onChange={(e) => handleFormChange('difficulty', e.target.value)}
-        label="Difficulty"
-      >
-        <MenuItem value="easy">Easy</MenuItem>
-        <MenuItem value="medium">Medium</MenuItem>
-        <MenuItem value="hard">Hard</MenuItem>
-        <MenuItem value="deadly">Deadly</MenuItem>
-      </Select>
-    </FormControl>
+    <Autocomplete<string | null>
+      options={imageAssets}
+      getOptionLabel={(option: string | null) => option || ''}
+      value={editedCombat.backgroundImage || null}
+      onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+        handleFormChange('backgroundImage', selectedOption || null);
+      }}
+      isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+      renderInput={(params: any) => (
+        <TextField 
+          {...params} 
+          label="Background Image"
+          placeholder="Select background image" 
+        />
+      )}
+    />
   );
   
   return (
-    <div className="p-6">
-      <Box className="flex justify-between items-center mb-6">
-        <Typography variant="h4" component="h1">
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary-light to-secondary-light bg-clip-text text-transparent">
           Combats
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-        >
-          Add Combat
-        </Button>
-      </Box>
+        </h1>
+        <div className="flex gap-2 mt-3 md:mt-0">
+          <Button 
+            startIcon={<AddIcon />}
+            variant="contained" 
+            color="primary"
+            onPress={handleAddClick}
+            className="btn-glow"
+          >
+            Add Combat
+          </Button>
+        </div>
+      </div>
       
-      <CombatSearch
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        resultsCount={filteredCombats.length}
-        totalCount={combats.length}
-      />
+      {/* Floating search */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div className="flex-grow w-full md:w-auto shadow-md rounded-xl">
+          <CombatSearch
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            resultsCount={filteredCombats.length}
+            totalCount={combats.length}
+          />
+        </div>
+      </div>
       
-      <Grid container spacing={3}>
-        {filteredCombats.map(combat => (
-          <Grid item xs={12} sm={6} md={4} key={combat.id}>
-            <CombatCard
-              combat={combat}
-              locations={locations}
-              onEditClick={handleEditClick}
-              onDeleteClick={handleDeleteClick}
-            />
-          </Grid>
-        ))}
-        
-        {filteredCombats.length === 0 && (
-          <Grid item xs={12}>
-            <Box className="text-center p-8 bg-gray-800/30 rounded-lg">
-              <Typography variant="h6">
-                {searchQuery ? 'No combats match your search' : 'No combats found'}
-              </Typography>
-              <Typography variant="body2" className="mt-2 text-gray-400">
-                {searchQuery ? 'Try a different search term' : 'Click "Add Combat" to create your first combat'}
-              </Typography>
-            </Box>
-          </Grid>
+      {/* Grid layout for combat cards */}
+      <div className="mb-6">
+        {filteredCombats.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+            {filteredCombats.map(combat => (
+              <CombatCard
+                key={combat.id}
+                combat={combat}
+                locations={locations}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-background-surface flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="text-4xl text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <p className="text-text-secondary text-lg mb-6">
+              {searchQuery ? 'No combats match your search' : 'No combats found. Create your first combat to get started.'}
+            </p>
+            <Button
+              variant="contained"
+              color="primary"
+              onPress={handleAddClick}
+              className="btn-glow"
+            >
+              Create Combat
+            </Button>
+          </div>
         )}
-      </Grid>
+      </div>
       
       {/* Combat Form Dialog */}
       <Dialog
@@ -418,41 +352,52 @@ export const CombatsView: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        title={selectedCombat ? `Edit Combat: ${selectedCombat.name}` : 'Add New Combat'}
       >
-        <DialogTitle>
-          {selectedCombat ? `Edit Combat: ${selectedCombat.name}` : 'Add New Combat'}
-        </DialogTitle>
+        <DialogTitle>{selectedCombat ? `Edit Combat: ${selectedCombat.name}` : 'Add New Combat'}</DialogTitle>
         <DialogContent>
           <Box className="pt-4 space-y-4">
             <TextField
               label="Name"
               fullWidth
               value={editedCombat.name || ''}
-              onChange={(e) => handleFormChange('name', e.target.value)}
+              onChange={(value) => handleFormChange('name', value)}
             />
             
             <TextField
               label="Description"
               fullWidth
-              multiline
-              rows={4}
               value={editedCombat.description || ''}
-              onChange={(e) => handleFormChange('description', e.target.value)}
+              onChange={(value) => handleFormChange('description', value)}
             />
             
             <FormControl>
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={editedCombat.descriptionType === 'markdown'}
-                    onChange={(e) => handleFormChange('descriptionType', e.target.checked ? 'markdown' : 'plain')}
+                    isSelected={editedCombat.descriptionType === 'markdown'}
+                    onChange={(isChecked) => handleFormChange('descriptionType', isChecked ? 'markdown' : 'plain')}
                   />
                 }
                 label="Format description as Markdown"
               />
             </FormControl>
             
-            {renderDifficultyDropdown()}
+            {/* Inlined Difficulty Dropdown */}
+            <FormControl fullWidth className="mb-4">
+              <InputLabel>Difficulty</InputLabel>
+              <Select
+                selectedKey={editedCombat.difficulty || 'medium'}
+                onSelectionChange={(key) => handleFormChange('difficulty', key as CombatDifficulty)}
+                label="Difficulty"
+              >
+                <SelectItem key="easy">Easy</SelectItem>
+                <SelectItem key="medium">Medium</SelectItem>
+                <SelectItem key="hard">Hard</SelectItem>
+                <SelectItem key="deadly">Deadly</SelectItem>
+              </Select>
+            </FormControl>
+            
             {renderLocationDropdown()}
             {renderBackgroundMusicDropdown()}
             {renderEntrySoundDropdown()}
@@ -464,25 +409,32 @@ export const CombatsView: React.FC = () => {
               </Typography>
               <FormControl fullWidth>
                 <Autocomplete
-                  multiple
                   options={playerCharacters}
-                  getOptionLabel={(option) => option.name}
-                  value={editedCombat.playerCharacters || []}
-                  onChange={(e, value) => handleFormChange('playerCharacters', value)}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Select Players" />
+                  getOptionLabel={(option: Character) => option.name}
+                  value={null}
+                  onChange={(_event: React.ChangeEvent<{}> | null, value: Character | null) => handleAddPlayer(value)}
+                  renderInput={(params: any) => (
+                    <TextField {...params} label="Add Player Character" />
                   )}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                      />
-                    ))
-                  }
                 />
               </FormControl>
+              
+              {(editedCombat.playerCharacters && editedCombat.playerCharacters.length > 0) && (
+                <List dense className="border rounded mt-2 max-h-40 overflow-y-auto">
+                  {editedCombat.playerCharacters.map((player) => (
+                    <ListItem key={player.id} divider>
+                      <ListItemText primary={player.name} />
+                      <IconButton 
+                        edge="end" 
+                        aria-label={`remove ${player.name}`}
+                        onClick={() => handleRemovePlayer(player.id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
             </Box>
             
             <Box className="mb-4">
@@ -493,13 +445,13 @@ export const CombatsView: React.FC = () => {
               <Box className="flex gap-2 mb-2">
                 <Autocomplete
                   options={filteredEnemyCharacters}
-                  getOptionLabel={(option) => option.name}
-                  onChange={(e, value) => {
+                  getOptionLabel={(option: Character) => option.name}
+                  onChange={(_event: React.ChangeEvent<{}> | null, value: Character | null) => {
                     if (value) {
                       handleAddEnemy(value.id, enemyCharacters);
                     }
                   }}
-                  renderInput={(params) => (
+                  renderInput={(params: any) => (
                     <TextField {...params} label="Select an enemy to add" fullWidth />
                   )}
                   value={null}
@@ -540,7 +492,7 @@ export const CombatsView: React.FC = () => {
                   variant="outlined"
                   size="small"
                   startIcon={<AddIcon />}
-                  onClick={handleOpenAddRewardDialog}
+                  onPress={handleOpenAddRewardDialog}
                 >
                   Add Reward
                 </Button>
@@ -582,10 +534,10 @@ export const CombatsView: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="inherit">
+          <Button onPress={handleCloseDialog}>
             Cancel
           </Button>
-          <Button onClick={handleSave} color="primary" variant="contained" disabled={!editedCombat.name}>
+          <Button onPress={handleSave} color="primary" variant="contained" isDisabled={!editedCombat.name}>
             Save
           </Button>
         </DialogActions>
@@ -595,6 +547,7 @@ export const CombatsView: React.FC = () => {
       <Dialog
         open={showDeleteConfirm}
         onClose={cancelDelete}
+        title="Confirm Deletion"
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -603,10 +556,10 @@ export const CombatsView: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={cancelDelete} color="inherit">
+          <Button onPress={cancelDelete}>
             Cancel
           </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
+          <Button onPress={confirmDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
@@ -618,6 +571,7 @@ export const CombatsView: React.FC = () => {
         onClose={() => setIsAddRewardDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        title="Add Reward Item"
       >
         <DialogTitle>Add Reward Item</DialogTitle>
         <DialogContent>
@@ -626,35 +580,35 @@ export const CombatsView: React.FC = () => {
               label="Name"
               fullWidth
               value={newRewardItem.name}
-              onChange={(e) => setNewRewardItem({...newRewardItem, name: e.target.value})}
+              onChange={(value) => setNewRewardItem({...newRewardItem, name: value})}
             />
             <TextField
               label="Description"
               fullWidth
               value={newRewardItem.description}
-              onChange={(e) => setNewRewardItem({...newRewardItem, description: e.target.value})}
+              onChange={(value) => setNewRewardItem({...newRewardItem, description: value})}
             />
             <TextField
               label="Quantity"
               type="number"
               fullWidth
-              value={newRewardItem.quantity}
-              onChange={(e) => setNewRewardItem({...newRewardItem, quantity: parseInt(e.target.value) || 1})}
+              value={String(newRewardItem.quantity)}
+              onChange={(value) => setNewRewardItem({...newRewardItem, quantity: parseInt(value) || 1})}
             />
             <TextField
               label="Price (optional)"
               type="number"
               fullWidth
-              value={newRewardItem.price || ''}
-              onChange={(e) => setNewRewardItem({...newRewardItem, price: e.target.value ? parseInt(e.target.value) : undefined})}
+              value={newRewardItem.price !== undefined ? String(newRewardItem.price) : ''}
+              onChange={(value) => setNewRewardItem({...newRewardItem, price: value ? parseInt(value) : undefined})}
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddRewardDialogOpen(false)} variant="outlined" color="secondary">
+          <Button onPress={() => setIsAddRewardDialogOpen(false)} variant="outlined" color="secondary">
             Cancel
           </Button>
-          <Button onClick={handleAddReward} variant="contained" color="primary" disabled={!newRewardItem.name}>
+          <Button onPress={handleAddReward} variant="contained" color="primary" isDisabled={!newRewardItem.name}>
             Add
           </Button>
         </DialogActions>
@@ -666,6 +620,7 @@ export const CombatsView: React.FC = () => {
         onClose={() => setIsEditRewardDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        title="Edit Reward Item"
       >
         <DialogTitle>Edit Reward Item</DialogTitle>
         <DialogContent>
@@ -674,35 +629,35 @@ export const CombatsView: React.FC = () => {
               label="Name"
               fullWidth
               value={newRewardItem.name}
-              onChange={(e) => setNewRewardItem({...newRewardItem, name: e.target.value})}
+              onChange={(value) => setNewRewardItem({...newRewardItem, name: value})}
             />
             <TextField
               label="Description"
               fullWidth
               value={newRewardItem.description}
-              onChange={(e) => setNewRewardItem({...newRewardItem, description: e.target.value})}
+              onChange={(value) => setNewRewardItem({...newRewardItem, description: value})}
             />
             <TextField
               label="Quantity"
               type="number"
               fullWidth
-              value={newRewardItem.quantity}
-              onChange={(e) => setNewRewardItem({...newRewardItem, quantity: parseInt(e.target.value) || 1})}
+              value={String(newRewardItem.quantity)}
+              onChange={(value) => setNewRewardItem({...newRewardItem, quantity: parseInt(value) || 1})}
             />
             <TextField
               label="Price (optional)"
               type="number"
               fullWidth
-              value={newRewardItem.price || ''}
-              onChange={(e) => setNewRewardItem({...newRewardItem, price: e.target.value ? parseInt(e.target.value) : undefined})}
+              value={newRewardItem.price !== undefined ? String(newRewardItem.price) : ''}
+              onChange={(value) => setNewRewardItem({...newRewardItem, price: value ? parseInt(value) : undefined})}
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsEditRewardDialogOpen(false)} variant="outlined" color="secondary">
+          <Button onPress={() => setIsEditRewardDialogOpen(false)} variant="outlined" color="secondary">
             Cancel
           </Button>
-          <Button onClick={handleSaveEditedReward} variant="contained" color="primary" disabled={!newRewardItem.name}>
+          <Button onPress={handleSaveEditedReward} variant="contained" color="primary" isDisabled={!newRewardItem.name}>
             Save
           </Button>
         </DialogActions>

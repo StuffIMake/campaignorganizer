@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../../store';
 import { Combat, Character } from '../../../store';
+import { useAudioPlayer } from '../../audio/hooks/useAudioPlayer';
 
 /**
  * Interface for combat participants with initiative
@@ -28,9 +29,10 @@ export const useCombatSession = () => {
   const { 
     combats, 
     characters, 
-    playTrack, 
-    stopIndividualTrack 
   } = useStore();
+  
+  // Get audio functions from the hook
+  const { play, stop } = useAudioPlayer();
   
   // Get the combat ID from the URL search params (e.g., ?id=123)
   const searchParams = new URLSearchParams(location.search);
@@ -64,7 +66,7 @@ export const useCombatSession = () => {
       if (combat.entrySound) {
         const entryTrackId = `/audio/${combat.entrySound}`;
         entrySoundRef.current = entryTrackId;
-        playTrack(entryTrackId, { 
+        play(entryTrackId, { 
           replace: false, 
           locationId: `combat-entrysound-${combat.id}`, 
           loop: false 
@@ -74,7 +76,7 @@ export const useCombatSession = () => {
       if (combat.backgroundMusic) {
         const bgmTrackId = `/audio/${combat.backgroundMusic}`;
         bgmTrackRef.current = bgmTrackId;
-        playTrack(bgmTrackId, { 
+        play(bgmTrackId, { 
           replace: false, 
           locationId: `combat-bgm-${combat.id}`, 
           loop: true 
@@ -87,16 +89,16 @@ export const useCombatSession = () => {
     // Cleanup function to stop tracks when component unmounts
     return () => {
       if (entrySoundRef.current) {
-        stopIndividualTrack(entrySoundRef.current);
+        stop(entrySoundRef.current);
         entrySoundRef.current = null;
       }
       
       if (bgmTrackRef.current) {
-        stopIndividualTrack(bgmTrackRef.current);
+        stop(bgmTrackRef.current);
         bgmTrackRef.current = null;
       }
     };
-  }, [combat, playTrack, stopIndividualTrack]);
+  }, [combat, play, stop]);
   
   // Initialize combat participants
   useEffect(() => {

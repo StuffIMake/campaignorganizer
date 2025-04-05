@@ -151,7 +151,7 @@ function example() {
                 variant="text" 
                 color="default"
                 size="small"
-                href="/locations"
+                href="/campaignorganizer/locations/"
               >
                 View All
               </Button>
@@ -194,7 +194,7 @@ function example() {
                 variant="text" 
                 color="default"
                 size="small"
-                href="/characters"
+                href="/campaignorganizer/characters/"
               >
                 View All
               </Button>

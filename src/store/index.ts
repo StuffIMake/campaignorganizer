@@ -65,16 +65,17 @@ export const useStore = create<StoreState>()(
         // Use the refreshAssets method from the assets slice
         await get().refreshAssets();
         
-        const { hasAssets } = get();
+        // const { hasAssets } = get(); // <<< REMOVED CHECK >>>
         
-        if (hasAssets) {
-          // Call fetch methods on the respective slices
-          await Promise.all([
-            get().fetchLocations(),
-            get().fetchCharacters(),
-            get().fetchCombats()
-          ]);
-        }
+        // if (hasAssets) { // <<< REMOVED CHECK >>>
+        // Call fetch methods on the respective slices
+        // Ensure core data is always fetched if available in IndexedDB
+        await Promise.all([
+          get().fetchLocations(),
+          get().fetchCharacters(),
+          get().fetchCombats()
+        ]);
+        // } // <<< REMOVED CHECK >>>
         
         set({ isLoading: false }); // Reset loading state
 

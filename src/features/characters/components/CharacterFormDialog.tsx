@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
@@ -7,12 +7,14 @@ import {
   Button,
   TextField,
   Select,
-  MenuItem,
+  Item as SelectItem,
   FormControl,
   InputLabel,
-  Grid
+  Grid,
+  Autocomplete
 } from '../../../components/ui';
-import { Character, Location } from '../../../store';
+import { Character } from '../../../store';
+import type { CustomLocation as Location } from '../../../store';
 
 interface CharacterFormDialogProps {
   open: boolean;
@@ -43,8 +45,40 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
   locations,
   imageAssets
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Create a collection of items for React Aria Select
+  // This approach uses React Aria's item collection pattern
+  const locationItems = useMemo(() => {
+    // Start with the "None" option
+    const items = [
+      <SelectItem key="">None</SelectItem>
+    ];
+    
+    // Add each location
+    for (const location of locations) {
+      items.push(
+        <SelectItem key={location.id}>{location.name}</SelectItem>
+      );
+    }
+    
+    return items;
+  }, [locations]);
+  
+  // Similarly create asset items
+  const assetItems = useMemo(() => {
+    const items = [
+      <SelectItem key="">None</SelectItem>
+    ];
+    
+    for (const asset of imageAssets) {
+      items.push(
+        <SelectItem key={asset}>{asset}</SelectItem>
+      );
+    }
+    
+    return items;
+  }, [imageAssets]);
+
+  const handleSubmit = () => {
     onSubmit();
   };
 
@@ -59,13 +93,13 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
         <DialogTitle>{title}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} className="mt-2">
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <TextField
-                label="Name"
                 fullWidth
-                required
+                label="Name"
                 value={formData.name}
-                onChange={(e) => onChange('name', e.target.value)}
+                onChange={(value) => onChange('name', value)}
+                isRequired
               />
             </Grid>
             
@@ -73,57 +107,57 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
               <FormControl fullWidth>
                 <InputLabel>Type</InputLabel>
                 <Select
-                  value={formData.type}
+                  selectedKey={formData.type}
                   label="Type"
-                  onChange={(e) => onChange('type', e.target.value)}
+                  onSelectionChange={(key) => onChange('type', key)}
                 >
-                  <MenuItem value="npc">NPC</MenuItem>
-                  <MenuItem value="merchant">Merchant</MenuItem>
-                  <MenuItem value="enemy">Enemy</MenuItem>
-                  <MenuItem value="player">Player</MenuItem>
+                  <SelectItem key="player">Player</SelectItem>
+                  <SelectItem key="npc">NPC</SelectItem>
+                  <SelectItem key="monster">Monster</SelectItem>
                 </Select>
               </FormControl>
             </Grid>
             
             <Grid item xs={12} sm={6}>
               <TextField
-                label="HP"
-                type="number"
                 fullWidth
-                value={formData.hp}
-                onChange={(e) => onChange('hp', e.target.value)}
+                label="HP"
+                value={String(formData.hp)}
+                onChange={(value) => onChange('hp', parseInt(value) || 0)}
               />
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Location</InputLabel>
-                <Select
-                  value={formData.locationId}
-                  label="Location"
-                  onChange={(e) => onChange('locationId', e.target.value)}
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {locations.map((location) => (
-                    <MenuItem key={location.id} value={location.id}>
-                      {location.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete<Location | null>
+                options={locations}
+                getOptionLabel={(option: Location | null) => option?.name || ''}
+                value={locations.find(loc => loc.id === formData.locationId) || null}
+                onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: Location | null) => {
+                  onChange('locationId', selectedOption?.id || '');
+                }}
+                isOptionEqualToValue={(option: Location | null, value: Location | null) => option?.id === value?.id}
+                renderInput={(params: any) => (
+                  <TextField 
+                    {...params}
+                    label="Location"
+                    placeholder="Select a location" 
+                    fullWidth
+                  />
+                )}
+              />
             </Grid>
             
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Description Type</InputLabel>
                 <Select
-                  value={formData.descriptionType}
+                  selectedKey={formData.descriptionType}
                   label="Description Type"
-                  onChange={(e) => onChange('descriptionType', e.target.value)}
+                  onSelectionChange={(key) => onChange('descriptionType', key)}
                 >
-                  <MenuItem value="markdown">Markdown</MenuItem>
-                  <MenuItem value="image">Image</MenuItem>
-                  <MenuItem value="pdf">PDF</MenuItem>
+                  <SelectItem key="markdown">Markdown</SelectItem>
+                  <SelectItem key="image">Image</SelectItem>
+                  <SelectItem key="pdf">PDF</SelectItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -134,7 +168,7 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
                   label="Description"
                   fullWidth
                   value={formData.description}
-                  onChange={(e) => onChange('description', e.target.value)}
+                  onChange={(value) => onChange('description', value)}
                 />
               </Grid>
             ) : (
@@ -144,16 +178,11 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
                     {formData.descriptionType === 'image' ? 'Image Asset' : 'PDF Asset'}
                   </InputLabel>
                   <Select
-                    value={formData.descriptionAssetName}
+                    selectedKey={formData.descriptionAssetName}
                     label={formData.descriptionType === 'image' ? 'Image Asset' : 'PDF Asset'}
-                    onChange={(e) => onChange('descriptionAssetName', e.target.value)}
+                    onSelectionChange={(key) => onChange('descriptionAssetName', key)}
                   >
-                    <MenuItem value="">None</MenuItem>
-                    {imageAssets.map((asset) => (
-                      <MenuItem key={asset} value={asset}>
-                        {asset}
-                      </MenuItem>
-                    ))}
+                    {assetItems}
                   </Select>
                 </FormControl>
               </Grid>
@@ -161,11 +190,10 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onPress={onClose}>Cancel</Button>
           <Button 
-            type="submit"
-            variant="contained" 
-            color="primary"
+            onPress={handleSubmit} 
+            isDisabled={!formData.name}
           >
             Save
           </Button>

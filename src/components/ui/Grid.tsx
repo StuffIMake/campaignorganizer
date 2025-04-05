@@ -26,7 +26,7 @@ const Grid = forwardRef<HTMLDivElement, GridProps>(({
   spacing = 0,
   className = '',
   sx = {},
-  ...props
+  ...rest
 }, ref) => {
   // Convert sx props to inline styles
   const inlineStyle: React.CSSProperties = {};
@@ -112,9 +112,9 @@ const Grid = forwardRef<HTMLDivElement, GridProps>(({
         ${item ? lgClass : ''}
         ${item ? xlClass : ''}
         ${className}
-      `}
-      style={{ ...inlineStyle, ...props.style }}
-      {...props}
+      `.trim()}
+      style={{ ...inlineStyle, ...rest.style }}
+      {...rest}
     >
       {children}
     </div>

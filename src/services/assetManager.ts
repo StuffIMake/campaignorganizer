@@ -269,13 +269,14 @@ export class AssetManager {
           resolve(request.result || null);
         };
         
-        request.onerror = () => {
+        request.onerror = (event) => {
+          console.error(`[AssetManager DEBUG] IndexedDB GET request failed for type=${type}, name=${name}`, event);
           db.close();
-          reject(new Error(`Failed to get asset ${name} from ${storeName}`));
+          resolve(null);
         };
       });
     } catch (error) {
-      console.error(`Error getting asset ${name}:`, error);
+      console.error(`[AssetManager DEBUG] Error opening DB in getAssetByName for ${name}:`, error);
       return null;
     }
   }
@@ -348,16 +349,57 @@ export class AssetManager {
   // Get a URL for an asset (from IndexedDB)
   static async getAssetUrl(type: AssetType, name: string): Promise<string> {
     if (!name) return '';
-    
+
     try {
-      const asset = await this.getAssetByName(type, name);
+      // Check if it's a PDF file by extension
+      const isPdf = name.toLowerCase().endsWith('.pdf');
       
+      const asset = await this.getAssetByName(type, name);
+
       if (asset) {
-        // Create a data URL for the asset
+        // For PDFs, create a blob URL to prevent routing issues
+        if (isPdf) {
+          try {
+            // Create a blob from the base64 data
+            const parts = asset.data.split(';base64,');
+            let contentType = asset.type;
+            let base64Data = asset.data;
+            
+            // Handle if the data is already in base64 format
+            if (parts.length === 2) {
+              contentType = parts[0].split(':')[1];
+              base64Data = parts[1];
+            } else {
+              base64Data = asset.data;
+            }
+            
+            const binary = atob(base64Data);
+            const array = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              array[i] = binary.charCodeAt(i);
+            }
+            
+            // Create blob and return blob URL
+            const blob = new Blob([array], { type: contentType });
+            return URL.createObjectURL(blob);
+          } catch (err) {
+            console.error('Error creating blob URL for PDF:', err);
+            // Fall back to data URL if blob creation fails
+          }
+        }
+        
+        // For non-PDF files or if blob creation failed, return data URL
         return `data:${asset.type};base64,${asset.data}`;
       }
-      
-      // Return empty string if no asset found
+
+      // For PDFs not in database, use absolute URL to prevent routing conflicts
+      if (isPdf) {
+        // Ensure URL starts with / and doesn't have /campaignorganizer/ prefix
+        const cleanName = name.startsWith('/') ? name : `/${name}`;
+        return window.location.origin + cleanName;
+      }
+
+      // Return empty string if no asset found in DB
       return '';
     } catch (error) {
       console.error(`Error getting asset URL for ${name}:`, error);
@@ -742,5 +784,16 @@ export class AssetManager {
         message: `Error creating example data: ${error instanceof Error ? error.message : String(error)}`
       };
     }
+  }
+
+  // Helper to convert base64 string to Blob
+  private static base64ToBlob(base64: string, contentType: string): Blob {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
   }
 } 

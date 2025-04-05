@@ -61,13 +61,14 @@ export const useMap = () => {
         const savedLocation = locations.find(loc => loc.id === selectedLocationId);
         if (savedLocation) {
           setSelectedLocation(savedLocation);
-          setShowDetails(true);
+          setShowDetails(true); // Always show details when loading a saved location
         } else {
           // If saved location doesn't exist anymore, load the first location
           const topLocations = getAllTopLevelLocations();
           if (topLocations.length > 0) {
             setSelectedLocation(topLocations[0]);
             setSelectedLocationId(topLocations[0].id);
+            setShowDetails(true); // Show details for the first location
           }
         }
       } else {
@@ -76,6 +77,7 @@ export const useMap = () => {
         if (topLocations.length > 0) {
           setSelectedLocation(topLocations[0]);
           setSelectedLocationId(topLocations[0].id);
+          setShowDetails(true); // Show details for the first location
         }
       }
     }
@@ -88,7 +90,19 @@ export const useMap = () => {
       setIsPdf(isPdfFile);
       
       if (isPdfFile) {
-        setCurrentPdfAsset(selectedLocation.imageUrl);
+        // Instead of directly using the imageUrl, get a blob URL from AssetManager
+        AssetManager.getAssetUrl('images', selectedLocation.imageUrl)
+          .then(blobUrl => {
+            // Only set the PDF asset if we got a valid URL
+            if (blobUrl) {
+              setCurrentPdfAsset(blobUrl);
+            } else {
+              console.error('Failed to get blob URL for PDF:', selectedLocation.imageUrl);
+            }
+          })
+          .catch(err => {
+            console.error('Error getting blob URL for PDF:', err);
+          });
       }
     } else {
       setIsPdf(false);
@@ -104,38 +118,37 @@ export const useMap = () => {
       return;
     }
     
-    if (selectedLocation?.id !== location.id) {
-      setSelectedLocation(location);
-      setShowDetails(true);
+    // Always set the selected location
+    setSelectedLocation(location);
+    
+    // Always show details when selecting a location - no conditionals
+    setShowDetails(true);
+    
+    // Play entry sound if available
+    if (location.entrySound) {
+      const soundUrl = await AssetManager.getAssetUrl('audio', location.entrySound);
       
-      // Play entry sound if available
-      if (location.entrySound) {
-        const soundUrl = await AssetManager.getAssetUrl('audio', location.entrySound);
-        
-        // Only try to play the sound if a URL was returned
-        if (soundUrl) {
-          const locationSound = new Howl({
-            src: [soundUrl],
-            loop: false,
-            volume: useStore.getState().volume,
-          });
-          locationSound.play();
-        }
-      }
-      
-      if (location.backgroundMusic) {
-        // Use AssetManager to check if the audio exists before trying to play it
-        const audioPath = `/audio/${location.backgroundMusic}`;
-        const isSublocation = !!location.parentLocationId;
-        // Only pass replace: false if this is a sublocation with mixWithParent: true
-        const replace = !(isSublocation && location.mixWithParent === true);
-        playTrack(audioPath, { 
-          replace: replace, 
-          locationId: location.id 
+      // Only try to play the sound if a URL was returned
+      if (soundUrl) {
+        const locationSound = new Howl({
+          src: [soundUrl],
+          loop: false,
+          volume: useStore.getState().volume,
         });
+        locationSound.play();
       }
-    } else {
-      setShowDetails(!showDetails);
+    }
+    
+    if (location.backgroundMusic) {
+      // Use AssetManager to check if the audio exists before trying to play it
+      const audioPath = `/audio/${location.backgroundMusic}`;
+      const isSublocation = !!location.parentLocationId;
+      // Only pass replace: false if this is a sublocation with mixWithParent: true
+      const replace = !(isSublocation && location.mixWithParent === true);
+      playTrack(audioPath, { 
+        replace: replace, 
+        locationId: location.id 
+      });
     }
     
     // Save the selected location ID in the store
@@ -193,16 +206,16 @@ export const useMap = () => {
     setEditingLocation(null);
   };
   
-  // Handle viewing PDF
-  const handleViewPdf = (url?: string) => {
-    if (isPdf) {
-      // Use the provided URL if available, otherwise use currentPdfAsset
-      const pdfUrl = url || currentPdfAsset;
-      if (pdfUrl) {
-        setCurrentPdfAsset(pdfUrl);
-        setPdfViewerOpen(true);
-      }
+  // Handler to view PDF assets
+  const handleViewPdf = (pdfAsset?: string) => {
+    // If a specific PDF asset is provided, use it
+    if (pdfAsset) {
+      setCurrentPdfAsset(pdfAsset);
     }
+    // Otherwise use the current PDF asset (from the location)
+    
+    // Show the PDF viewer dialog instead of trying to navigate to the PDF directly
+    setPdfViewerOpen(true);
   };
 
   return {

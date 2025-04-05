@@ -1,40 +1,37 @@
-import React, { forwardRef, useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Box from './Box';
-import TextField from './TextField';
-import Paper from './Paper';
 import { List, ListItem } from './List';
-import Chip from './Chip';
-import IconButton from './IconButton';
-import { CloseIcon } from '../../assets/icons';
+import Paper from './Paper';
+import { TextFieldProps } from './TextField';
+
+// Update params interface to include InputProps.inputProps for ARIA attrs
+export interface AutocompleteRenderInputParams extends Omit<TextFieldProps, 'children'> {
+  ref: React.Ref<HTMLInputElement>;
+  InputProps?: {
+    inputProps?: React.InputHTMLAttributes<HTMLInputElement> & {
+      role?: string;
+      'aria-autocomplete'?: 'list' | 'both' | 'none';
+      'aria-expanded'?: boolean;
+      'aria-controls'?: string;
+      'aria-activedescendant'?: string;
+    }
+  }
+}
 
 interface AutocompleteProps<T> {
   options: T[];
-  value: T | T[] | null;
-  onChange: (event: React.ChangeEvent<{}>, value: T | T[] | null) => void;
+  value: T | null;
+  onChange: (event: React.ChangeEvent<{}> | null, value: T | null) => void;
   getOptionLabel: (option: T) => string;
   renderInput: (params: AutocompleteRenderInputParams) => React.ReactNode;
   isOptionEqualToValue?: (option: T, value: T) => boolean;
-  multiple?: boolean;
-  freeSolo?: boolean;
-  renderTags?: (value: T[], getTagProps: (props: any) => any) => React.ReactNode;
   className?: string;
   sx?: Record<string, any>;
 }
 
-export interface AutocompleteRenderInputParams {
-  InputProps: {
-    ref: React.Ref<any>;
-    className: string;
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
-  };
-  inputProps: React.InputHTMLAttributes<HTMLInputElement>;
-  ref: React.Ref<any>;
-}
-
 function Autocomplete<T>(
   props: AutocompleteProps<T>,
-  ref: React.ForwardedRef<HTMLDivElement>
+  forwardedRef: React.ForwardedRef<HTMLDivElement>
 ) {
   const {
     options,
@@ -43,97 +40,139 @@ function Autocomplete<T>(
     getOptionLabel,
     renderInput,
     isOptionEqualToValue,
-    multiple = false,
-    freeSolo = false,
-    renderTags,
     className = '',
     sx = {},
   } = props;
 
-  const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState<string>(value ? getOptionLabel(value) : '');
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-  // Helper function to handle selection
-  const handleOptionSelect = (option: T) => {
-    if (multiple) {
-      const newValue = Array.isArray(value) ? [...value, option] : [option];
-      onChange({} as React.ChangeEvent<{}>, newValue);
-    } else {
-      onChange({} as React.ChangeEvent<{}>, option);
-    }
-    setOpen(false);
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); // Keep internal ref for input element
+  const listboxRef = useRef<HTMLUListElement>(null);
 
-  // Helper function to handle tag deletion in multiple mode
-  const handleTagDelete = (tagToDelete: T) => {
-    if (multiple && Array.isArray(value)) {
-      const newValue = value.filter(item => 
-        isOptionEqualToValue 
-          ? !isOptionEqualToValue(item, tagToDelete)
-          : item !== tagToDelete
-      );
-      onChange({} as React.ChangeEvent<{}>, newValue);
-    }
-  };
+  // Update input value when external value changes
+  useEffect(() => {
+    setInputValue(value ? getOptionLabel(value) : '');
+  }, [value, getOptionLabel]);
 
-  // Generate tag props for renderTags function
-  const getTagProps = ({ index }: { index: number }) => ({
-    onDelete: () => Array.isArray(value) && handleTagDelete(value[index]),
+  // Filter options based on input value
+  const filteredOptions = options.filter(option => {
+    const label = getOptionLabel(option);
+    // Ensure label is a truthy string before calling toLowerCase
+    // AND ensure inputValue is also a string
+    return label && typeof label === 'string' &&
+           typeof inputValue === 'string' &&
+           label.toLowerCase().includes(inputValue.toLowerCase());
   });
 
-  // Render the input
-  const params: AutocompleteRenderInputParams = {
-    InputProps: {
-      ref: null,
-      className: 'autocomplete-input',
-      startAdornment: multiple && Array.isArray(value) && value.length > 0 ? (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {renderTags 
-            ? renderTags(value, getTagProps)
-            : value.map((option, index) => (
-              <Chip
-                key={index}
-                label={getOptionLabel(option)}
-                onDelete={() => handleTagDelete(option)}
-                size="small"
-              />
-            ))
-          }
-        </Box>
-      ) : undefined,
-      endAdornment: inputValue ? (
-        <IconButton size="small" onClick={() => setInputValue('')}>
-          <CloseIcon />
-        </IconButton>
-      ) : undefined,
-    },
-    inputProps: {
-      value: inputValue,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-        if (!open) setOpen(true);
-      },
-      onFocus: () => setOpen(true),
-      onBlur: () => setTimeout(() => setOpen(false), 200),
-    },
-    ref,
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Update handleInputChange to accept value directly (from TextField's onChange)
+  const handleInputChange = (newValue: string) => {
+    setInputValue(newValue);
+    setIsOpen(true);
+    setHighlightedIndex(-1);
+    // onChange(e, null); // Decide if typing should clear the selection externally
   };
 
-  // Convert sx props to inline styles
-  const inlineStyle: React.CSSProperties = {};
-  if (sx.width) inlineStyle.width = sx.width;
-  if (sx.minWidth) inlineStyle.minWidth = sx.minWidth;
-  if (sx.maxWidth) inlineStyle.maxWidth = sx.maxWidth;
+  const handleInputFocus = () => {
+    setIsOpen(true);
+  };
+
+  const handleOptionClick = (option: T) => {
+    setInputValue(getOptionLabel(option));
+    setIsOpen(false);
+    onChange(null, option); // Pass null event, selected option
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) {
+      // Allow opening with arrow down if closed
+      if (e.key === 'ArrowDown') {
+        setIsOpen(true);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex((prevIndex) =>
+          prevIndex < filteredOptions.length - 1 ? prevIndex + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex((prevIndex) =>
+          prevIndex > 0 ? prevIndex - 1 : filteredOptions.length - 1
+        );
+        break;
+      case 'Enter':
+        if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+          handleOptionClick(filteredOptions[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setIsOpen(false);
+        break;
+    }
+  };
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (isOpen && highlightedIndex >= 0 && listboxRef.current) {
+      const itemElement = listboxRef.current.children[highlightedIndex] as HTMLElement;
+      if (itemElement) {
+        itemElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedIndex, isOpen]);
+
+  // Prepare props for renderInput, including the ref and ARIA props via InputProps
+  const renderInputParams: AutocompleteRenderInputParams = {
+    value: inputValue,
+    onChange: handleInputChange,
+    onFocus: handleInputFocus,
+    onKeyDown: handleKeyDown,
+    ref: inputRef,
+    InputProps: {
+      inputProps: {
+        role: 'combobox',
+        'aria-autocomplete': 'list',
+        'aria-expanded': isOpen,
+        'aria-controls': isOpen ? 'autocomplete-listbox' : undefined,
+        'aria-activedescendant': isOpen && highlightedIndex >= 0 ? `option-${highlightedIndex}` : undefined,
+      }
+    }
+  };
+
+  // Merge containerRef and forwardedRef for the outer div if needed
+  React.useImperativeHandle(forwardedRef, () => containerRef.current as HTMLDivElement);
 
   return (
     <Box 
-      ref={ref}
+      ref={containerRef} // Apply container ref here
       className={`autocomplete ${className}`}
       sx={{ position: 'relative', ...sx }}
     >
-      {renderInput(params)}
+      {/* Call renderInput directly, passing params including the ref */}
+      {renderInput(renderInputParams)}
       
-      {open && options.length > 0 && (
+      {isOpen && filteredOptions.length > 0 && (
         <Paper 
           sx={{ 
             position: 'absolute', 
@@ -144,17 +183,23 @@ function Autocomplete<T>(
             mt: 1
           }}
         >
-          <List>
-            {options
-              .filter(option => 
-                inputValue === '' || 
-                getOptionLabel(option).toLowerCase().includes(inputValue.toLowerCase())
-              )
-              .map((option, index) => (
+          <List 
+            ref={listboxRef} 
+            role="listbox" 
+            id="autocomplete-listbox"
+          >
+            {filteredOptions.map((option, index) => (
                 <ListItem 
-                  key={index} 
-                  onClick={() => handleOptionSelect(option)}
-                  sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}
+                  key={index}
+                  role="option"
+                  id={`option-${index}`}
+                  aria-selected={highlightedIndex === index}
+                  onClick={() => handleOptionClick(option)}
+                  sx={{
+                    cursor: 'pointer', 
+                    bgcolor: highlightedIndex === index ? 'action.hover' : 'transparent',
+                    '&:hover': { bgcolor: 'action.hover' } 
+                  }}
                 >
                   {getOptionLabel(option)}
                 </ListItem>
@@ -167,25 +212,26 @@ function Autocomplete<T>(
   );
 }
 
-export default forwardRef(Autocomplete) as <T>(
+// Adjust export type if needed
+const ForwardedAutocomplete = React.forwardRef(Autocomplete);
+export default ForwardedAutocomplete as <T>(
   props: AutocompleteProps<T> & { ref?: React.ForwardedRef<HTMLDivElement> }
 ) => JSX.Element;
 
-// Specialized string-only autocomplete that doesn't require getOptionLabel
+// StringAutocomplete helper
 export const StringAutocomplete: React.FC<{
   options: string[];
   value: string | null;
-  onChange: (event: React.ChangeEvent<{}>, value: string | null) => void;
+  onChange: (event: React.ChangeEvent<{}> | null, value: string | null) => void;
   renderInput: (params: AutocompleteRenderInputParams) => React.ReactNode;
   className?: string;
   sx?: Record<string, any>;
 }> = (props) => {
-  // Provide a default getOptionLabel function for strings
   const autocompleteProps = {
     ...props,
     getOptionLabel: (option: string) => option,
     isOptionEqualToValue: (option: string, value: string) => option === value
   };
-  
-  return Autocomplete(autocompleteProps, null);
+  // Use the forwarded ref component
+  return <ForwardedAutocomplete {...autocompleteProps as any} />;
 }; 

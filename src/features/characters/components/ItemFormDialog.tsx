@@ -45,30 +45,42 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
           <Grid container spacing={2} className="mt-2">
             <Grid item xs={12}>
               <TextField
+                autoFocus
+                name="name"
                 label="Name"
                 fullWidth
                 required
                 value={item.name}
                 onChange={(e) => onChange('name', e.target.value)}
+                aria-label="Item name"
               />
             </Grid>
             
             <Grid item xs={12}>
               <TextField
+                name="description"
                 label="Description"
                 fullWidth
                 value={item.description}
                 onChange={(e) => onChange('description', e.target.value)}
+                aria-label="Item description"
+                InputProps={{
+                  inputProps: {
+                    style: { minHeight: '80px' }
+                  }
+                }}
               />
             </Grid>
             
             <Grid item xs={12} sm={6}>
               <TextField
+                name="quantity"
                 label="Quantity"
                 type="number"
                 fullWidth
                 value={item.quantity}
                 onChange={(e) => onChange('quantity', e.target.value)}
+                aria-label="Item quantity"
               />
             </Grid>
             
@@ -84,11 +96,12 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onPress={onClose}>Cancel</Button>
           <Button 
             type="submit"
             variant="contained" 
             color="primary"
+            onPress={handleSubmit}
           >
             Save
           </Button>

@@ -14,7 +14,8 @@ interface ImageData {
 export interface StorageState {
   locations?: any[];
   characters?: any[];
-  images?: ImageData[]; // Add images array
+  images?: ImageData[];
+  combats?: any[]; // Added combats
   // Add other data types as needed
 }
 
@@ -48,7 +49,7 @@ export async function setupIndexedDB(page: Page, data: StorageState): Promise<vo
     const dbVersion = 1; 
     const dataStoreName = 'data';
     const imagesStoreName = 'images';
-    const audioStoreName = 'audio'; // Add audio store name
+    const audioStoreName = 'audio';
     
     return new Promise<void>((resolve, reject) => {
       
@@ -79,9 +80,11 @@ export async function setupIndexedDB(page: Page, data: StorageState): Promise<vo
           
           // Determine all stores to include in the transaction
           const storesToClear: string[] = [];
-          if (data.locations || data.characters) storesToClear.push(dataStoreName);
+          if (data.locations || data.characters || data.combats) {
+             storesToClear.push(dataStoreName);
+          }
           if (data.images) storesToClear.push(imagesStoreName);
-          // Add other stores if they might receive data
+          // Add audio if needed: if (data.audio) storesToClear.push(audioStoreName);
           
           if (storesToClear.length === 0) {
             db.close();
@@ -130,10 +133,10 @@ export async function setupIndexedDB(page: Page, data: StorageState): Promise<vo
             
             // Add data after clearing (inside the same transaction)
             const addData = (db: IDBDatabase, data: StorageState, tx: IDBTransaction) => {
-              // Add data store items (locations, characters)
+              // Add data store items (locations, characters, combats)
               const dataStore = tx.objectStore(dataStoreName);
               if (data.locations) {
-                dataStore.add({ 
+                dataStore.put({
                   name: 'locations.json', 
                   data: JSON.stringify(data.locations, null, 2), 
                   type: 'application/json', 
@@ -141,9 +144,17 @@ export async function setupIndexedDB(page: Page, data: StorageState): Promise<vo
                 });
               }
               if (data.characters) {
-                dataStore.add({ 
+                dataStore.put({
                   name: 'characters.json', 
                   data: JSON.stringify(data.characters, null, 2), 
+                  type: 'application/json', 
+                  lastModified: Date.now() 
+                });
+              }
+              if (data.combats) {
+                dataStore.put({
+                  name: 'combats.json', 
+                  data: JSON.stringify(data.combats, null, 2), 
                   type: 'application/json', 
                   lastModified: Date.now() 
                 });
@@ -166,12 +177,12 @@ export async function setupIndexedDB(page: Page, data: StorageState): Promise<vo
             
           } catch (txError) {
             console.error('[Browser] Error creating transaction:', txError);
-            reject(new Error(`Transaction error: ${txError.message}`));
+            reject(new Error(`Transaction error: ${(txError as Error).message}`));
           }
         };
       } catch (error) {
         console.error('[Browser] Unexpected IndexedDB error:', error);
-        reject(new Error(`IndexedDB error: ${error.message}`));
+        reject(new Error(`IndexedDB error: ${(error as Error).message}`));
       }
     });
   }, serializedData);

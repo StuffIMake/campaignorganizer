@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Paper, 
   TextField, 
   InputAdornment, 
   IconButton 
@@ -8,7 +7,7 @@ import {
 import { 
   SearchIcon, 
   ClearIcon 
-} from '../../../components/ui';
+} from '../../../assets/icons';
 
 interface CharacterSearchProps {
   searchQuery: string;
@@ -20,27 +19,35 @@ export const CharacterSearch: React.FC<CharacterSearchProps> = ({
   onSearchChange
 }) => {
   return (
-    <Paper className="p-4 mb-4">
-      <TextField
-        fullWidth
-        placeholder="Search characters by name, type, location, or items..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-          endAdornment: searchQuery && (
-            <InputAdornment position="end">
-              <IconButton onClick={() => onSearchChange('')} size="small">
-                <ClearIcon />
-              </IconButton>
-            </InputAdornment>
-          )
-        }}
-      />
-    </Paper>
+    <div className="w-full">
+      <div className="bg-background-surface/60 backdrop-blur-sm rounded-xl shadow-md p-1">
+        <TextField
+          fullWidth
+          placeholder="Search characters by name, type, location, or items..."
+          value={searchQuery}
+          onChange={(value) => onSearchChange(value)}
+          aria-label="Search characters"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon className="text-text-secondary" />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton 
+                  onClick={() => onSearchChange('')} 
+                  size="small"
+                  aria-label="Clear search"
+                  className="text-text-secondary hover:text-primary-light"
+                >
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
+      </div>
+    </div>
   );
 }; 

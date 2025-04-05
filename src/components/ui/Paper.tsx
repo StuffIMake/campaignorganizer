@@ -15,7 +15,7 @@ const Paper = forwardRef<HTMLDivElement, PaperProps>(
     elevation = 1, 
     variant = 'elevation',
     sx = {},
-    ...props 
+    ...rest 
   }, ref) => {
     
     const inlineStyle: React.CSSProperties = {};
@@ -65,10 +65,10 @@ const Paper = forwardRef<HTMLDivElement, PaperProps>(
         ref={ref}
         className={`paper glass-effect rounded-[var(--radius-md)] ${elevationClass} ${variantClass} ${className}`}
         style={{
-          ...props.style,
-          ...inlineStyle
+          ...inlineStyle,
+          ...rest.style
         }}
-        {...props}
+        {...rest}
       >
         {children}
       </div>
