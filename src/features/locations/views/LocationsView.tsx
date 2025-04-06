@@ -409,6 +409,8 @@ export const LocationsView: React.FC = () => {
 
   // Cast handleChange to the expected type for the form dialog
   const handleFormChange = (field: string, value: any) => {
+    console.log(`LocationsView.handleFormChange: field=${field}, value=`, value, "type=", typeof value);
+    // Make sure to preserve the boolean type for boolean fields like mixWithParent
     handleChange(field as keyof LocationFormData, value);
   };
 

@@ -6,8 +6,8 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../../store';
 import { CustomLocation, Character, Combat } from '../../../store';
-import { Howl } from 'howler';
 import { AssetManager } from '../../../services/assetManager';
+import { useAudioPlayer } from '../../audio/hooks/useAudioPlayer';
 
 /**
  * Custom hook that provides map state management and operations
@@ -26,8 +26,6 @@ export const useMap = () => {
     locations,
     characters,
     combats,
-    playTrack,
-    stopTrack,
     getSublocationsByParentId,
     getAllTopLevelLocations,
     refreshAssets,
@@ -38,6 +36,9 @@ export const useMap = () => {
     setSelectedLocationId,
     updateLocation
   } = useStore();
+  
+  // Get audio player functions from the *hook*
+  const { play, stopLocationTracks } = useAudioPlayer();
   
   // UI State
   const [selectedLocation, setSelectedLocation] = useState<CustomLocation | null>(null);
@@ -110,7 +111,7 @@ export const useMap = () => {
   }, [selectedLocation?.id, selectedLocation?.imageUrl]);
   
   // Handle location selection
-  const handleLocationSelect = async (location: CustomLocation) => {
+  const handleLocationSelect = (location: CustomLocation) => {
     // If in edit mode, show edit dialog instead of regular selection
     if (editMode) {
       setEditingLocation(location);
@@ -118,36 +119,43 @@ export const useMap = () => {
       return;
     }
     
+    const previousLocationId = selectedLocation?.id;
+    
     // Always set the selected location
     setSelectedLocation(location);
     
     // Always show details when selecting a location - no conditionals
     setShowDetails(true);
     
-    // Play entry sound if available
-    if (location.entrySound) {
-      const soundUrl = await AssetManager.getAssetUrl('audio', location.entrySound);
-      
-      // Only try to play the sound if a URL was returned
-      if (soundUrl) {
-        const locationSound = new Howl({
-          src: [soundUrl],
-          loop: false,
-          volume: useStore.getState().volume,
-        });
-        locationSound.play();
-      }
+    const isSublocation = !!location.parentLocationId;
+    const shouldMixWithParent = isSublocation && location.mixWithParent === true;
+    
+    // Stop previous location's tracks if IDs differ and we are NOT mixing
+    if (previousLocationId && previousLocationId !== location.id && !shouldMixWithParent) {
+      console.log(`useMap.handleLocationSelect: Stopping tracks for previous location: ${previousLocationId}`);
+      // Use the prefix matching stop function
+      stopLocationTracks(previousLocationId); 
     }
     
+    // Play entry sound if available
+    if (location.entrySound) {
+      // Entry sounds always replace previous *entry* sounds for the *same* location
+      play(location.entrySound, { 
+        replace: true, 
+        locationId: `${location.id}-entry`, 
+        loop: false
+      });
+    }
+    
+    // Play background music
     if (location.backgroundMusic) {
-      // Use AssetManager to check if the audio exists before trying to play it
-      const audioPath = `/audio/${location.backgroundMusic}`;
-      const isSublocation = !!location.parentLocationId;
-      // Only pass replace: false if this is a sublocation with mixWithParent: true
-      const replace = !(isSublocation && location.mixWithParent === true);
-      playTrack(audioPath, { 
-        replace: replace, 
-        locationId: location.id 
+      // Replace = true UNLESS mixing with parent
+      const replaceBgm = !shouldMixWithParent;
+      
+      play(location.backgroundMusic, { 
+        replace: replaceBgm, 
+        locationId: location.id, // BGM uses the location ID directly
+        loop: true 
       });
     }
     

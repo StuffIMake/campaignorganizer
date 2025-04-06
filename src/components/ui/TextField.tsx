@@ -1,50 +1,121 @@
-import React, { forwardRef, useRef } from 'react';
+import React, { forwardRef, ChangeEvent, useState, useEffect, useRef } from 'react';
 import { useTextField } from 'react-aria';
 import type { AriaTextFieldProps } from 'react-aria';
 import { ReactNode } from 'react';
 
 // TextField props interface
-export interface TextFieldProps extends Omit<AriaTextFieldProps, 'label'> {
-  label?: React.ReactNode;
+export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>, 'onChange' | 'size'> {
+  label?: string;
   helperText?: string;
   error?: boolean;
   fullWidth?: boolean;
-  variant?: 'standard' | 'outlined' | 'filled' | 'glass';
+  variant?: 'outlined' | 'filled' | 'standard';
+  multiline?: boolean;
+  rows?: number;
   InputProps?: {
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+    inputProps?: object;
   };
+  isRequired?: boolean;
+  onChange?: (value: string, event?: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   size?: 'small' | 'medium' | 'large';
   className?: string;
 }
 
-export const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
+export const TextField = forwardRef<HTMLInputElement | HTMLTextAreaElement, TextFieldProps>(({
+  label,
   helperText,
   error = false,
   fullWidth = false,
   variant = 'outlined',
-  className = '',
+  multiline = false,
+  rows = 3,
   InputProps,
+  className = '',
+  disabled = false,
+  isRequired = false,
+  onChange,
+  value,
   size = 'medium',
-  ...ariaProps
-}, ref) => {
-  // Map props for useTextField
+  ...props
+}, forwardedRef) => {
+  // Local state to manage the input value for uncontrolled inputs
+  const [inputValue, setInputValue] = useState(value || '');
+  
+  // Create internal refs for React Aria to use
+  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Update internal state when value prop changes
+  useEffect(() => {
+    if (value !== undefined) {
+      // Special handling for Autocomplete components
+      const isInAutocomplete = InputProps?.inputProps && 
+        Object.keys(InputProps.inputProps).some(k => k.startsWith('aria-') && k.includes('combobox'));
+      
+      // In Autocomplete, only update from non-empty values
+      if (isInAutocomplete) {
+        if (value !== '') {
+          setInputValue(value);
+        }
+      } else {
+        // For regular TextFields: Always accept value prop changes
+        setInputValue(value);
+      }
+    }
+  }, [value, InputProps]);
+  
+  // Handle input value changes
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    
+    // Update internal state for uncontrolled component behavior
+    if (value === undefined) {
+      setInputValue(newValue);
+    }
+    
+    // Call parent onChange with the string value first, then the event
+    if (onChange) {
+      onChange(newValue, e);
+    }
+  };
+
+  // Merge all input props for consistent handling
+  const getInputProps = () => {
+    // Start with the aria input props
+    const baseProps = !multiline ? inputProps : {};
+    
+    // Handle value explicitly to avoid controlled component issues
+    const valueProps = {
+      value: value !== undefined ? value : inputValue,
+      onChange: handleChange
+    };
+    
+    return {
+      ...baseProps,
+      ...valueProps,
+      ...(InputProps?.inputProps || {})
+    };
+  };
+  
+  // Map props for useTextField - only use for non-multiline
   const mappedProps: AriaTextFieldProps = {
-    ...ariaProps,
     description: helperText,
     errorMessage: helperText,
     validationState: error ? 'invalid' : 'valid',
+    isDisabled: disabled,
+    label,
+    // Ensure we have an aria-label if no visible label is provided
+    'aria-label': !label && !props['aria-label'] && !props['aria-labelledby'] 
+      ? (props.placeholder || 'text field') 
+      : props['aria-label']
   };
 
-  // Ref for the input element
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Call useTextField hook
-  const { labelProps, inputProps, descriptionProps, errorMessageProps } = useTextField(
-    mappedProps,
-    inputRef
-  );
+  // Call useTextField hook only for input (not textarea)
+  const { labelProps, inputProps, descriptionProps, errorMessageProps } = !multiline 
+    ? useTextField(mappedProps, inputRef)
+    : { labelProps: {}, inputProps: {}, descriptionProps: {}, errorMessageProps: {} };
 
   // Size classes
   const sizeMap = {
@@ -78,111 +149,112 @@ export const TextField = forwardRef<HTMLDivElement, TextFieldProps>(({
     ${className}
   `.trim();
   
-  // Label classes
-  const labelClasses = `
-    block ${sizeMap.label} font-medium
-    ${error ? 'text-red-500' : 'text-slate-300'}
-  `.trim();
+  // Classes for the input field
+  const inputClasses = `
+    block px-2.5 pb-2.5 pt-4 w-full text-base
+    bg-background-input dark:bg-background-input-dark
+    border ${error ? 'border-red-500' : 'border-border-primary dark:border-border-primary-dark'} 
+    rounded-lg
+    focus:outline-none focus:ring-0
+    ${error 
+      ? 'focus:border-red-500' 
+      : 'focus:border-primary dark:focus:border-primary-light'
+    }
+    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+    transition-all duration-200
+  `;
+
+  // Handle refs correctly
+  React.useImperativeHandle(forwardedRef, () => {
+    return multiline ? textareaRef.current! : inputRef.current!;
+  });
   
-  // Helper/Error text classes
-  const descriptionClasses = `
-    ${sizeMap.helper}
-    ${error ? 'text-red-500' : 'text-slate-400'}
-  `.trim();
-  
-  // Base input classes
-  let inputClasses = `
-    block w-full appearance-none 
-    transition-all duration-200 ease-in-out
-    focus:outline-none focus:ring-2 focus:ring-indigo-500/70 
-    ${sizeMap.input}
-    ${ariaProps.isDisabled ? 'opacity-60 cursor-not-allowed' : ''}
-    ${InputProps?.startAdornment ? 'pl-10' : ''}
-    ${InputProps?.endAdornment ? 'pr-10' : ''}
-  `.trim();
-  
-  // Variant specific classes
-  if (variant === 'outlined') {
-    inputClasses += error
-      ? ' border border-red-500 bg-red-500/5 focus:border-red-500 rounded-[var(--radius-md)] text-slate-300'
-      : ' border border-slate-700 focus:border-indigo-500/70 bg-slate-800/30 hover:bg-slate-800/50 hover:border-slate-600 rounded-[var(--radius-md)] text-slate-300';
-  } else if (variant === 'filled') {
-    inputClasses += error
-      ? ' border-b-2 border-red-500 bg-red-500/5 rounded-t-[var(--radius-md)] text-slate-300'
-      : ' border-b-2 border-slate-700 focus:border-indigo-500/70 bg-slate-800/50 hover:bg-slate-800/70 rounded-t-[var(--radius-md)] text-slate-300';
-  } else if (variant === 'glass') {
-    inputClasses += error
-      ? ' border border-red-500/50 bg-white/5 backdrop-blur-md rounded-[var(--radius-md)] text-slate-300 shadow-sm'
-      : ' border border-white/10 focus:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-[var(--radius-md)] text-slate-300 shadow-sm';
-  } else {
-    // Standard variant
-    inputClasses += error
-      ? ' border-b-2 border-red-500 bg-transparent hover:bg-slate-900/20 text-slate-300'
-      : ' border-b-2 border-slate-700 focus:border-indigo-500/70 bg-transparent hover:bg-slate-900/20 text-slate-300';
+  // If multiline, render a textarea
+  if (multiline) {
+    return (
+      <div className={containerClasses}>
+        {label && (
+          <label
+            className={`
+              absolute text-sm text-text-secondary dark:text-text-secondary-dark z-10
+              duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-background px-2 peer-focus:px-2 
+              peer-focus:text-primary dark:peer-focus:text-primary-light
+              ${error ? 'text-red-500 peer-focus:text-red-500' : ''}
+              left-1
+            `}
+          >
+            {label} {isRequired && <span className="text-red-500">*</span>}
+          </label>
+        )}
+        <textarea
+          ref={textareaRef}
+          className={inputClasses}
+          rows={rows}
+          onChange={handleChange}
+          value={value !== undefined ? value : inputValue}
+          disabled={disabled}
+          aria-label={!label && !props['aria-label'] && !props['aria-labelledby'] 
+            ? (props.placeholder || 'text area') 
+            : props['aria-label']}
+          {...props}
+        />
+        {helperText && (
+          <p className={`mt-1 text-xs ${error ? 'text-red-500' : 'text-text-secondary dark:text-text-secondary-dark'}`}>
+            {helperText}
+          </p>
+        )}
+      </div>
+    );
   }
   
-  // Input wrapper for adornments
-  const inputWrapperClasses = 'relative';
-  
-  // Adornment positioning classes
-  const startAdornmentClasses = `
-    absolute left-3 top-1/2 transform -translate-y-1/2
-    ${error ? 'text-red-500' : 'text-slate-400'}
-    ${ariaProps.isDisabled ? 'opacity-60' : ''}
-  `.trim();
-  
-  const endAdornmentClasses = `
-    absolute right-3 top-1/2 transform -translate-y-1/2
-    ${error ? 'text-red-500' : 'text-slate-400'}
-    ${ariaProps.isDisabled ? 'opacity-60' : ''}
-  `.trim();
-  
-  // Extract potential inputProps passed via InputProps (optional chaining)
-  const nestedInputProps = InputProps?.inputProps || {};
-
-  // Use useImperativeHandle to forward the external ref to the input element
-  // This assumes the forwarded ref wants the input, not the outer div.
-  // If the outer div is needed, adjust this or use a different pattern.
-  React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
-
+  // Otherwise render an input
   return (
-    <div className={containerClasses} /* ref={ref} - Removed if ref targets input */ >
-      {ariaProps.label && (
-        <label {...labelProps} className={labelClasses}>
-          {ariaProps.label}
+    <div className={containerClasses}>
+      {label && (
+        <label
+          {...labelProps}
+          className={`
+            absolute text-sm text-text-secondary dark:text-text-secondary-dark z-10
+            duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-background px-2 peer-focus:px-2 
+            peer-focus:text-primary dark:peer-focus:text-primary-light
+            ${error ? 'text-red-500 peer-focus:text-red-500' : ''}
+            left-1
+          `}
+        >
+          {label} {isRequired && <span className="text-red-500">*</span>}
         </label>
       )}
-      
-      <div className={inputWrapperClasses}>
+      <div className="relative">
         {InputProps?.startAdornment && (
-          <div className={startAdornmentClasses}>
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             {InputProps.startAdornment}
           </div>
         )}
-        
         <input
-          {...inputProps}
-          {...nestedInputProps}
           ref={inputRef}
-          className={inputClasses}
+          {...getInputProps()}
+          className={`
+            ${inputClasses}
+            ${InputProps?.startAdornment ? 'pl-10' : ''}
+            ${InputProps?.endAdornment ? 'pr-10' : ''}
+          `}
+          disabled={disabled}
+          {...props}
         />
-        
         {InputProps?.endAdornment && (
-          <div className={endAdornmentClasses}>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             {InputProps.endAdornment}
           </div>
         )}
       </div>
-      
-      {error && helperText ? (
-        <p {...errorMessageProps} className={descriptionClasses}>
+      {helperText && (
+        <p 
+          {...(error ? errorMessageProps : descriptionProps)}
+          className={`mt-1 text-xs ${error ? 'text-red-500' : 'text-text-secondary dark:text-text-secondary-dark'}`}
+        >
           {helperText}
         </p>
-      ) : helperText ? (
-        <p {...descriptionProps} className={descriptionClasses}>
-          {helperText}
-        </p>
-      ) : null}
+      )}
     </div>
   );
 });

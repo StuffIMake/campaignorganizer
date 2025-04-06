@@ -48,8 +48,6 @@ export const MapView: React.FC = () => {
     handleCombatClick,
   } = useEntityDialogs();
 
-  const playTrack = useStore((state) => state.playTrack);
-
   // --- Render using modern design language ---
   return (
     <div className="h-full w-full flex flex-col">
@@ -112,7 +110,6 @@ export const MapView: React.FC = () => {
               combats={combats}
               onBack={() => setShowDetails(false)}
               onLocationSelect={handleLocationSelect}
-              playTrack={playTrack}
               onCharacterClick={handleCharacterClick}
               onCombatClick={handleCombatClick}
             />

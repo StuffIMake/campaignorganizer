@@ -134,6 +134,7 @@ export const useLocationForm = (onAdd: (location: Partial<CustomLocation>) => vo
   };
   
   const handleChange = (field: keyof LocationFormData, value: any) => {
+    console.log(`handleChange called: field=${field}, value=`, value, "type=", typeof value);
     setFormData(prev => ({
       ...prev,
       [field]: value

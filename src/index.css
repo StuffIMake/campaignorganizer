@@ -390,20 +390,26 @@
   }
 }
 
-/* Fullscreen PDF Dialog */
-.pdf-fullscreen-dialog {
+/* Remove all the complex PDF CSS and replace with simple classes */
+
+/* Simple PDF dialog styling */
+.simple-pdf-dialog {
   background-color: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
 }
 
-.pdf-fullscreen-dialog > div {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  margin: 0 !important;
+.simple-pdf-dialog > div {
+  background-color: #1a1a1a !important;
+  margin: 0 auto !important;
   padding: 0 !important;
-  max-width: 100vw !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
   overflow: hidden !important;
+  border-radius: 8px;
+}
+
+/* Simple iframe styling - no fancy transforms */
+iframe[type="application/pdf"] {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+  margin: 0;
+  padding: 0;
 }

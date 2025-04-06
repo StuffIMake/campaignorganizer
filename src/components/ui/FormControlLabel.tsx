@@ -26,6 +26,8 @@ const FormControlLabel: React.FC<FormControlLabelProps> = ({
   // Clone the control element to pass down the disabled prop
   const controlElement = React.cloneElement(control, {
     disabled: disabled || control.props.disabled,
+    // Important: preserve the original onChange handler
+    onChange: control.props.onChange
   });
 
   // Determine the flex direction based on labelPlacement

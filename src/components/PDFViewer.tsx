@@ -1,33 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress, Paper, Typography, IconButton } from './ui';
+import { CircularProgress } from './ui';
 import { AssetManager } from '../services/assetManager';
 import { getPdfFilename } from '../utils/pdfUtils';
 
-// Icons
-const DownloadIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
 
 interface PDFViewerProps {
   assetName: string;
   width?: string | number;
   height?: string | number;
   onError?: (error: string) => void;
-  allowDownload?: boolean;
   showTopBar?: boolean;
 }
 
@@ -36,7 +17,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   width = '100%',
   height = '600px',
   onError,
-  allowDownload = false,
   showTopBar = true
 }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -89,16 +69,24 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     loadPdfFromAssets();
   }, [assetName, onError]);
 
-  // Function to download the PDF
-  const handleDownload = () => {
-    if (pdfUrl) {
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = getPdfFilename(assetName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+
+  // Function to get PDF viewer parameters
+  const getPdfViewerParams = (): string => {
+    let params = '#';
+    
+    // Hide toolbars
+    params += 'toolbar=0&';
+    
+    // Hide navigation panes/sidebar
+    params += 'navpanes=0&scrollbar=0&sidebar=0&';
+    
+    // Set view mode
+    params += 'view=Fit&zoom=page-width&';
+    
+    // Disable default page mode that might show outlines/thumbs
+    params += 'pagemode=none&embedded=true';
+    
+    return params;
   };
 
   // Render loading state
@@ -121,36 +109,16 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   // Render PDF viewer
   return (
-    <div className="relative rounded overflow-hidden" style={{ width, height }}>
-      {showTopBar && (
-        <div className="absolute top-0 right-0 z-10 p-1 m-1 bg-white/90 dark:bg-gray-800/90 rounded-md flex items-center shadow-sm">
-          {allowDownload && (
-            <button 
-              onClick={handleDownload}
-              className="p-1.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              title={`Download ${getPdfFilename(assetName)}`}
-            >
-              <DownloadIcon />
-            </button>
-          )}
-        </div>
-      )}
-      
-      <object
-        data={pdfUrl}
-        type="application/pdf"
+    <div className="relative w-full h-full" style={{ width, height }}>
+      <iframe
+        src={`${pdfUrl}${getPdfViewerParams()}`}
         className="w-full h-full"
+        style={{ 
+          border: 'none',
+          backgroundColor: 'transparent'
+        }}
       >
-        <div className="p-4 flex flex-col items-center justify-center">
-          <p className="mb-2">Your browser cannot display the PDF directly.</p>
-          <button 
-            onClick={handleDownload}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Download PDF
-          </button>
-        </div>
-      </object>
+      </iframe>
     </div>
   );
 };

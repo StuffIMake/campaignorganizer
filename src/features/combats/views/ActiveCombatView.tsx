@@ -13,6 +13,7 @@ import { CombatParticipantDetails } from '../components/CombatParticipantDetails
 import { AddParticipantDialog } from '../components/AddParticipantDialog';
 import { useStore } from '../../../store';
 import { ArrowBackIcon } from '../../../assets/icons';
+import { AssetViewerDialog } from '../../characters/components/AssetViewerDialog';
 
 // Custom arrow forward icon for next turn button
 const ArrowForwardIcon = () => (
@@ -59,6 +60,48 @@ export const ActiveCombatView: React.FC = () => {
   
   const [addParticipantDialog, setAddParticipantDialog] = useState(false);
   const characters = useStore(state => state.characters);
+  
+  // Asset viewer state
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfAsset, setCurrentPdfAsset] = useState('');
+  const [markdownDialogOpen, setMarkdownDialogOpen] = useState(false);
+  const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
+  const [currentMarkdownTitle, setCurrentMarkdownTitle] = useState('');
+
+  // Function to view a PDF or image asset
+  const viewPdf = (pdfAsset: string) => {
+    setCurrentPdfAsset(pdfAsset);
+    setPdfViewerOpen(true);
+  };
+  
+  // Function to view markdown content
+  const viewMarkdown = (content: string, title: string) => {
+    setCurrentMarkdownContent(content);
+    setCurrentMarkdownTitle(title);
+    setMarkdownDialogOpen(true);
+  };
+  
+  // Function to close asset viewer
+  const closeAssetViewer = () => {
+    setPdfViewerOpen(false);
+    setMarkdownDialogOpen(false);
+  };
+
+  // Function to view participant description
+  const viewParticipantDescription = (participant: any) => {
+    if (!participant) return;
+    
+    const character = participant.character;
+    
+    if (character.descriptionType === 'pdf' && character.descriptionAssetName) {
+      viewPdf(character.descriptionAssetName);
+    } else if (character.descriptionType === 'image' && character.descriptionAssetName) {
+      viewPdf(character.descriptionAssetName); // For images, we'll use the same viewer
+    } else {
+      // Default to markdown
+      viewMarkdown(character.description || '', character.name);
+    }
+  };
   
   // Guard for missing combat data
   if (!combat) {
@@ -119,7 +162,7 @@ export const ActiveCombatView: React.FC = () => {
       </div>
       
       {/* Main content - flexible layout */}
-      <div className="flex flex-grow overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Slim left sidebar */}
         <div className="w-64 flex-shrink-0 border-r border-border-DEFAULT/20 flex flex-col overflow-hidden">
           <div className="flex justify-between items-center px-3 py-2 bg-background-surface/30 border-b border-border-DEFAULT/20">
@@ -166,6 +209,7 @@ export const ActiveCombatView: React.FC = () => {
               onSetEditing={(isEditing) => 
                 setEditingParticipantId(isEditing ? selectedParticipant.id : null)
               }
+              onViewDescription={() => viewParticipantDescription(selectedParticipant)}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -202,6 +246,16 @@ export const ActiveCombatView: React.FC = () => {
         onClose={() => setAddParticipantDialog(false)}
         onAddParticipant={addParticipant}
         characters={characters}
+      />
+
+      {/* Asset viewer dialog */}
+      <AssetViewerDialog
+        pdfViewerOpen={pdfViewerOpen}
+        markdownDialogOpen={markdownDialogOpen}
+        currentPdfAsset={currentPdfAsset}
+        currentMarkdownContent={currentMarkdownContent}
+        currentMarkdownTitle={currentMarkdownTitle}
+        onClose={closeAssetViewer}
       />
     </div>
   );

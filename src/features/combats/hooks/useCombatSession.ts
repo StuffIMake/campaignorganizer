@@ -27,12 +27,15 @@ export const useCombatSession = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { 
-    combats, 
-    characters, 
+    combats,
+    characters,
+    isCombatAudioInitialized,
+    markCombatAudioInitialized,
+    resetCombatAudioInitialized
   } = useStore();
   
   // Get audio functions from the hook
-  const { play, stop } = useAudioPlayer();
+  const { play, stopLocationTracks } = useAudioPlayer();
   
   // Get the combat ID from the URL search params (e.g., ?id=123)
   const searchParams = new URLSearchParams(location.search);
@@ -48,57 +51,104 @@ export const useCombatSession = () => {
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   
-  // Audio tracking
-  const entrySoundRef = useRef<string | null>(null);
-  const bgmTrackRef = useRef<string | null>(null);
-  const audioInitialized = useRef(false);
+  // Effect run counter for debugging
+  const effectRunCounter = useRef(0);
   
   // If no combat is found, redirect back to combats view
   useEffect(() => {
     if (!combatId || !combat) {
+      console.warn('useCombatSession: No valid combat found, redirecting.');
       navigate('/combats');
     }
   }, [combatId, combat, navigate]);
   
-  // Initialize audio when component mounts
+  // Initialize audio when component mounts - using store state instead of ref for initialization tracking
   useEffect(() => {
-    if (combat && !audioInitialized.current) {
-      if (combat.entrySound) {
-        const entryTrackId = `/audio/${combat.entrySound}`;
-        entrySoundRef.current = entryTrackId;
-        play(entryTrackId, { 
-          replace: false, 
-          locationId: `combat-entrysound-${combat.id}`, 
+    if (!combatId) return; // Exit early if no combatId
+    
+    effectRunCounter.current += 1;
+    const runCount = effectRunCounter.current;
+    console.log(`useCombatSession AUDIO EFFECT RUN #${runCount} (Deps: combatId=${combatId})`);
+
+    // Get current combat using the stable ID
+    const currentCombats = useStore.getState().combats;
+    const currentCombat = currentCombats.find(c => c.id === combatId);
+
+    // Check if audio is already initialized for this combat using the store state
+    const isInitialized = useStore.getState().isCombatAudioInitialized(combatId);
+
+    // Guard effect execution: Only run once per combat instance
+    if (currentCombat && !isInitialized) {
+      // Mark combat as initialized FIRST using store function 
+      useStore.getState().markCombatAudioInitialized(combatId);
+      
+      const combatLocationIdPrefix = `combat-${currentCombat.id}`;
+      console.log(`RUN #${runCount}: Initializing audio for combat ID: ${currentCombat.id}, prefix: ${combatLocationIdPrefix}`); 
+      
+      // Stop any potentially lingering audio from the *map* location 
+      if (currentCombat.locationId) {
+         console.log(`RUN #${runCount}: Stopping previous map location tracks for ${currentCombat.locationId}`);
+         stopLocationTracks(currentCombat.locationId); 
+      }
+            
+      // Play entry sound (replace any previous entry sound for this *combat*)
+      if (currentCombat.entrySound) {
+        console.log(`RUN #${runCount}: Playing combat entry sound ${currentCombat.entrySound}`);
+        play(currentCombat.entrySound, { 
+          replace: true,
+          locationId: `${combatLocationIdPrefix}-entry`, 
           loop: false 
         });
       }
       
-      if (combat.backgroundMusic) {
-        const bgmTrackId = `/audio/${combat.backgroundMusic}`;
-        bgmTrackRef.current = bgmTrackId;
-        play(bgmTrackId, { 
-          replace: false, 
-          locationId: `combat-bgm-${combat.id}`, 
+      // Play background music (replace any previous BGM for this *combat*)
+      if (currentCombat.backgroundMusic) {
+        console.log(`RUN #${runCount}: Playing combat BGM ${currentCombat.backgroundMusic}`);
+        play(currentCombat.backgroundMusic, { 
+          replace: true,
+          locationId: `${combatLocationIdPrefix}-bgm`, 
           loop: true 
         });
       }
       
-      audioInitialized.current = true;
+      console.log(`RUN #${runCount}: Initialization block finished.`);
+    } else {
+      // Log why the initialization block was skipped
+      if (!currentCombat) {
+        console.log(`RUN #${runCount}: SKIPPED audio init (combat object not found for ID: ${combatId})`);
+      } else if (isInitialized) {
+        console.log(`RUN #${runCount}: SKIPPED audio init (already initialized for combat ID: ${currentCombat.id})`);
+      }
     }
     
-    // Cleanup function to stop tracks when component unmounts
+    // Cleanup function: Stop *only* combat-specific audio when leaving
     return () => {
-      if (entrySoundRef.current) {
-        stop(entrySoundRef.current);
-        entrySoundRef.current = null;
-      }
+      if (!combatId) return;
       
-      if (bgmTrackRef.current) {
-        stop(bgmTrackRef.current);
-        bgmTrackRef.current = null;
+      console.log(`useCombatSession AUDIO EFFECT CLEANUP #${runCount} for combat ID: ${combatId}`);
+      
+      // Only stop audio if we're really unmounting (component is being removed from DOM)
+      // We detect this by checking if the combat ID still exists in the URL
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      const currentCombatId = currentSearchParams.get('id');
+      
+      if (currentCombatId !== combatId) {
+        // We're actually navigating away from this combat - reset state and stop audio
+        const combatLocationIdPrefix = `combat-${combatId}`;
+        console.log(`CLEANUP #${runCount}: Cleaning up audio for ${combatLocationIdPrefix}`);
+        
+        // Stop all combat-related audio
+        stopLocationTracks(combatLocationIdPrefix);
+        
+        // Reset initialization flag in the store when actually leaving combat
+        resetCombatAudioInitialized(combatId);
+      } else {
+        console.log(`CLEANUP #${runCount}: Skipped cleanup (not actually leaving combat)`);
       }
     };
-  }, [combat, play, stop]);
+    // Only depend on stable values
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combatId, play, stopLocationTracks]);
   
   // Initialize combat participants
   useEffect(() => {

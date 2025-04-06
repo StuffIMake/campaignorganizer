@@ -14,6 +14,7 @@ import {
 import { CustomLocation as Location } from '../../../store';
 import { Character } from '../../../store';
 import { Combat } from '../../../store';
+import { useAudioPlayer } from '../../audio/hooks/useAudioPlayer';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '../../../components/ui';
 
 interface TabPanelProps {
@@ -48,7 +49,6 @@ interface LocationDetailsProps {
   combats: Combat[];
   onBack: () => void;
   onLocationSelect: (location: Location) => void;
-  playTrack: (url: string, options?: { replace?: boolean; locationId?: string; loop?: boolean }) => void;
   onCharacterClick: (character: Character) => void;
   onCombatClick: (combat: Combat) => void;
 }
@@ -60,7 +60,6 @@ export const LocationDetails: React.FC<LocationDetailsProps> = ({
   combats,
   onBack,
   onLocationSelect,
-  playTrack,
   onCharacterClick,
   onCombatClick
 }) => {
@@ -68,6 +67,7 @@ export const LocationDetails: React.FC<LocationDetailsProps> = ({
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const navigate = useNavigate();
+  const { play } = useAudioPlayer();
   
   const handleTabChange = (index: number) => {
     setActiveTab(index);
@@ -75,7 +75,8 @@ export const LocationDetails: React.FC<LocationDetailsProps> = ({
   
   const handlePlayBGM = () => {
     if (location.backgroundMusic) {
-      playTrack(`audio/${location.backgroundMusic}`, { 
+      play(location.backgroundMusic, { 
+        replace: true,
         locationId: location.id,
         loop: true
       });
@@ -84,7 +85,8 @@ export const LocationDetails: React.FC<LocationDetailsProps> = ({
   
   const handlePlayEntrySound = () => {
     if (location.entrySound) {
-      playTrack(`audio/${location.entrySound}`, { 
+      play(location.entrySound, { 
+        replace: true,
         locationId: `${location.id}-entry`,
         loop: false
       });

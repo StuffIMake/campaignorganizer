@@ -5,13 +5,11 @@ import {
   DialogContent, 
   DialogActions, 
   Button,
-  IconButton,
-  Box
+  IconButton
 } from '../../../components/ui';
 import { CloseIcon } from '../../../assets/icons';
 import MarkdownContent from '../../../components/MarkdownContent';
 import PDFViewer from '../../../components/PDFViewer';
-import { getPdfFilename } from '../../../utils/pdfUtils';
 
 interface AssetViewerDialogProps {
   pdfViewerOpen: boolean;
@@ -36,31 +34,29 @@ export const AssetViewerDialog: React.FC<AssetViewerDialogProps> = ({
       <Dialog 
         open={pdfViewerOpen} 
         onClose={onClose}
-        maxWidth="xl"
-        fullWidth
-        className="pdf-fullscreen-dialog"
+        maxWidth="lg"
+        fullWidth={true}
+        className="simple-pdf-dialog"
       >
-        <div className="relative h-full w-full">
-          <IconButton 
-            onClick={onClose}
-            size="small"
-            aria-label="close"
-            className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white"
-          >
-            <CloseIcon />
-          </IconButton>
-          
-          <div className="h-screen w-full flex items-center justify-center">
-            {currentPdfAsset && (
-              <PDFViewer 
-                assetName={currentPdfAsset} 
-                height="95vh" 
-                width="95%" 
-                allowDownload={true}
-                showTopBar={false}
-              />
-            )}
-          </div>
+        <IconButton 
+          onClick={onClose}
+          size="small"
+          aria-label="close"
+          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white"
+        >
+          <CloseIcon />
+        </IconButton>
+        
+        <div style={{ width: '100%', height: '85vh', position: 'relative' }}>
+          {currentPdfAsset && (
+            <PDFViewer 
+              assetName={currentPdfAsset} 
+              height="100%" 
+              width="100%" 
+              allowDownload={true}
+              showTopBar={true}
+            />
+          )}
         </div>
       </Dialog>
     );

@@ -173,24 +173,30 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
               )}
             />
             
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.mixWithParent}
-                    onChange={(e) => onChange('mixWithParent', e.target.checked)}
-                  />
-                }
-                label="Mix with parent location audio"
+            {/* Simplified mixWithParent toggle */}
+            <div className="flex items-center mt-2 mb-4">
+              <input
+                type="checkbox"
+                id="mixWithParent"
+                checked={formData.mixWithParent}
+                onChange={(e) => {
+                  console.log("Direct checkbox toggled:", e.target.checked);
+                  onChange('mixWithParent', e.target.checked);
+                }}
+                className="h-4 w-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
               />
-            </Grid>
+              <label htmlFor="mixWithParent" className="ml-2 text-sm font-medium">
+                Mix with parent location audio
+              </label>
+            </div>
             
-            {/* Background Music Autocomplete */}
+            {/* Background Music Autocomplete - Enhanced to prevent hover issues */}
             <Autocomplete<string | null>
               options={audioFiles}
               getOptionLabel={(option: string | null) => option || ''}
               value={formData.backgroundMusic || null}
               onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+                console.log('BGM selected:', selectedOption);
                 onChange('backgroundMusic', selectedOption || '');
               }}
               isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
@@ -200,6 +206,8 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
                   label="Background Music"
                   placeholder="Select background music" 
                   fullWidth
+                  // Add input name for debugging
+                  name="bgm-autocomplete-input"
                 />
               )}
             />

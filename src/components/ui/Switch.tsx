@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useCallback } from 'react';
 
 interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   checked?: boolean;
@@ -26,6 +26,17 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
   sx = {},
   ...props
 }, ref) => {
+  // Debug render
+  console.log('Switch rendering with checked=', checked);
+  
+  // Create a stable onChange handler that logs to help debug
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Switch handleChange called with checked=', e.target.checked);
+    if (onChange) {
+      onChange(e);
+    }
+  }, [onChange]);
+  
   // Convert sx props to inline styles
   const inlineStyle: React.CSSProperties = {};
   
@@ -75,7 +86,7 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
         checked={checked}
         defaultChecked={defaultChecked}
         disabled={disabled}
-        onChange={onChange}
+        onChange={handleChange}
         className="sr-only peer"
         {...inputProps}
         {...props}
