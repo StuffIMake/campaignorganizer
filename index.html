@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/d20.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DM Companion</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+    />
+    <!-- Handle SPA redirect from 404.html -->
+    <script>
+      (function() {
+        // Check if we have a redirect path stored
+        var redirectPath = localStorage.getItem('redirect_path');
+        if (redirectPath) {
+          // Clear the localStorage
+          localStorage.removeItem('redirect_path');
+          
+          // Use history API to replace the current URL with the target route
+          // This prevents adding a history entry and allows the SPA router to take over
+          history.replaceState(null, null, '/campaignorganizer' + redirectPath);
+        }
+      })();
+    </script>
+    
+    <!-- Handle dynamic imports better -->
+    <script>
+      // Patch the import function to handle GitHub Pages path issues
+      (function() {
+        // Store the original import function
+        const originalImport = window.import;
+        
+        // Define a custom error handler for dynamic imports
+        window.handleImportError = function(err) {
+          console.error('Dynamic import failed:', err);
+          
+          // If the error is because of a 404 on GitHub Pages, try to fix the path
+          if (err.message && err.message.includes('Failed to fetch dynamically imported module')) {
+            console.log('Attempting to reload the application...');
+            setTimeout(() => {
+              window.location.href = '/campaignorganizer/';
+            }, 1000);
+          }
+          
+          return Promise.reject(err);
+        };
+
+        // Add event listener for unhandled errors that might be related to chunk loading
+        window.addEventListener('error', function(event) {
+          if (event.filename && event.filename.includes('.js') && 
+              (event.message.includes('Failed to fetch') || event.message.includes('ChunkLoadError'))) {
+            console.error('Chunk load error detected:', event);
+            
+            // Redirect to the homepage after a delay
+            setTimeout(() => {
+              window.location.href = '/campaignorganizer/';
+            }, 2000);
+          }
+        });
+      })();
+    </script>
+    <script type="module" crossorigin src="/campaignorganizer/assets/index-8r9WiGT5.js"></script>
+    <link rel="modulepreload" crossorigin href="/campaignorganizer/assets/react-vendor-3Ywg6HeR.js">
+    <link rel="modulepreload" crossorigin href="/campaignorganizer/assets/map-vendor-Bbrwb_BN.js">
+    <link rel="modulepreload" crossorigin href="/campaignorganizer/assets/utilities-BiTQLgRB.js">
+    <link rel="stylesheet" crossorigin href="/campaignorganizer/assets/index-C5-LWB-7.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html> 
