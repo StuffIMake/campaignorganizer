@@ -32,3 +32,11 @@ Witcher*
 __mocks__
 campaign-data*
 .cursor
+
+.github*
+*.md
+*playwright*
+package-lock.json
+*nyc*
+*coverage*
+*test-results*
