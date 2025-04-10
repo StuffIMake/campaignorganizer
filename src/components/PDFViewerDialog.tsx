@@ -41,7 +41,6 @@ export const PDFViewerDialog: React.FC<PDFViewerDialogProps> = ({
               assetName={assetName} 
               height="95vh" 
               width="95%" 
-              allowDownload={true}
               showTopBar={false}
             />
           )}

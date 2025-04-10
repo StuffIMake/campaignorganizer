@@ -196,8 +196,8 @@ Example locations.json:
                 variant="outlined"
                 color="primary"
                 startIcon={<UploadIcon />}
-                onClick={handleClickFileInput}
-                disabled={isProcessing}
+                onPress={handleClickFileInput}
+                isDisabled={isProcessing}
               >
                 Select ZIP
               </Button>
@@ -206,8 +206,8 @@ Example locations.json:
                 variant="outlined" 
                 color="primary"
                 startIcon={<DownloadIcon />}
-                onClick={handleExportData}
-                disabled={isProcessing || !hasStoredAssets}
+                onPress={handleExportData}
+                isDisabled={isProcessing || !hasStoredAssets}
               >
                 Export Data
               </Button>
@@ -215,8 +215,8 @@ Example locations.json:
               <Button
                 variant="outlined"
                 color="primary"
-                onClick={handleCreateEmptyData}
-                disabled={isProcessing}
+                onPress={handleCreateEmptyData}
+                isDisabled={isProcessing}
               >
                 Create Sample Data
               </Button>
@@ -225,8 +225,8 @@ Example locations.json:
                 variant="outlined"
                 color="error"
                 startIcon={<DeleteIcon />}
-                onClick={handleClearAssets}
-                disabled={isProcessing || !hasStoredAssets}
+                onPress={handleClearAssets}
+                isDisabled={isProcessing || !hasStoredAssets}
               >
                 Clear Assets
               </Button>

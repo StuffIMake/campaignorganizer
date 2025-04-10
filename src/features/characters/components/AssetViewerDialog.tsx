@@ -51,9 +51,8 @@ export const AssetViewerDialog: React.FC<AssetViewerDialogProps> = ({
           {currentPdfAsset && (
             <PDFViewer 
               assetName={currentPdfAsset} 
-              height="100%" 
-              width="100%" 
-              allowDownload={true}
+              height="95vh" 
+              width="95%" 
               showTopBar={true}
             />
           )}

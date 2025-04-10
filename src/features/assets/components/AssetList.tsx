@@ -145,7 +145,7 @@ const AssetListComponent: React.FC<AssetListProps> = ({ type, title }) => {
           color="primary"
           size="small"
           startIcon={<AddIcon />}
-          onClick={handleAddAssetClick}
+          onPress={handleAddAssetClick}
         >
           Add {title}
         </Button>
