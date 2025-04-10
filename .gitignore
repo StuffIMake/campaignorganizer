@@ -33,7 +33,6 @@ __mocks__
 campaign-data*
 .cursor
 
-.github*
 *.md
 *playwright*
 package-lock.json
