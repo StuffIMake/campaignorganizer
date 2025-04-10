@@ -35,7 +35,6 @@ campaign-data*
 
 *.md
 *playwright*
-package-lock.json
 *nyc*
 *coverage*
 *test-results*
