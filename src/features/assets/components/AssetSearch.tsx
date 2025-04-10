@@ -1,36 +1,38 @@
 import React, { useState } from 'react';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { TextField, IconButton } from '../../../components/ui';
+import { SearchIcon, ClearIcon } from '../../../assets/icons';
 
 const AssetSearch: React.FC = () => {
   const [searchText, setSearchText] = useState('');
 
+  const handleChange = (value: string) => {
+    setSearchText(value);
+  };
+
   return (
-    <TextField 
-      fullWidth
-      placeholder="Search assets..."
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      aria-label="Search assets"
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon />
-          </InputAdornment>
-        ),
-        endAdornment: searchText ? (
-          <InputAdornment position="end">
+    <div className="relative w-full">
+      <TextField 
+        fullWidth
+        placeholder="Search assets..."
+        value={searchText}
+        onChange={handleChange}
+        aria-label="Search assets"
+        className="w-full"
+        InputProps={{
+          startAdornment: <SearchIcon className="text-gray-400" />,
+          endAdornment: searchText ? (
             <IconButton 
               size="small" 
-              onPress={() => setSearchText('')}
+              onClick={() => setSearchText('')}
               aria-label="Clear search"
+              className="text-gray-400 hover:text-gray-300"
             >
               <ClearIcon />
             </IconButton>
-          </InputAdornment>
-        ) : null
-      }}
-    />
+          ) : null
+        }}
+      />
+    </div>
   );
 };
 

@@ -48,7 +48,7 @@ export const AssetsView: React.FC = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => setShowAssetManager(true)}
+            onPress={() => setShowAssetManager(true)}
           >
             Import/Export Assets
           </Button>
@@ -58,7 +58,7 @@ export const AssetsView: React.FC = () => {
               variant="outlined"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={handleCreateNewJson}
+              onPress={handleCreateNewJson}
             >
               Create New JSON
             </Button>

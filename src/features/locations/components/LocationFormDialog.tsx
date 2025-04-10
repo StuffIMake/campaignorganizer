@@ -13,10 +13,12 @@ import {
   InputAdornment,
   Box,
   Autocomplete,
+  MultiAutocomplete,
   Chip
 } from '../../../components/ui';
 import { SearchIcon, ClearIcon } from '../../../assets/icons';
 import { CustomLocation } from '../../../store';
+import { Location as LocationType } from '../../../types/location';
 
 interface LocationFormDialogProps {
   open: boolean;
@@ -251,15 +253,14 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
             />
             
             {/* Connected Locations Autocomplete - Multiple Selection */}
-            <Autocomplete
-              multiple
+            <MultiAutocomplete<LocationType>
               options={locations.filter(loc => loc.id !== formData.parentLocationId)}
-              getOptionLabel={(option: CustomLocation) => option.name}
+              getOptionLabel={(option: LocationType) => option.name}
               value={selectedConnectedLocations}
-              onChange={(_event: React.ChangeEvent<{}> | null, selectedOptions: CustomLocation[]) => {
+              onChange={(_event: React.ChangeEvent<{}> | null, selectedOptions: LocationType[]) => {
                 onChange('connectedLocations', selectedOptions.map(opt => opt.id));
               }}
-              isOptionEqualToValue={(option: CustomLocation, value: CustomLocation) => option.id === value.id}
+              isOptionEqualToValue={(option: LocationType, value: LocationType) => option.id === value.id}
               renderInput={(params: any) => (
                 <TextField 
                   {...params}
@@ -268,8 +269,8 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
                   fullWidth
                 />
               )}
-              renderTags={(tagValue: CustomLocation[], getTagProps) =>
-                tagValue.map((option: CustomLocation, index: number) => (
+              renderTags={(tagValue: LocationType[], getTagProps: any) =>
+                tagValue.map((option: LocationType, index: number) => (
                   <Chip 
                     label={option.name} 
                     {...getTagProps({ index })} 

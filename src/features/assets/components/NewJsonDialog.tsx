@@ -42,9 +42,9 @@ const NewJsonDialogComponent: React.FC = () => {
   }, [isLoading, setIsCreateJsonOpen]);
   
   // Handle filename input changes
-  const handleFileNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewJsonFileName(e.target.value);
-  }, [setNewJsonFileName]);
+  const handleFileNameChange = useCallback((value: string) => {
+    setNewJsonFileName(value);
+  }, []);
   
   return (
     <Dialog
@@ -86,8 +86,8 @@ const NewJsonDialogComponent: React.FC = () => {
       
       <DialogActions>
         <Button
-          onClick={handleClose}
-          disabled={isLoading}
+          onPress={handleClose}
+          isDisabled={isLoading}
         >
           Cancel
         </Button>
@@ -96,8 +96,8 @@ const NewJsonDialogComponent: React.FC = () => {
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={handleCreate}
-          disabled={isLoading || !newJsonFileName}
+          onPress={handleCreate}
+          isDisabled={isLoading || !newJsonFileName}
         >
           Create
         </Button>

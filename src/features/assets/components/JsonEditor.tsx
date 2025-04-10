@@ -63,8 +63,8 @@ const JsonEditorComponent: React.FC = () => {
         
         <Button
           variant="text"
-          onClick={handleClose}
-          disabled={isLoading}
+          onPress={handleClose}
+          isDisabled={isLoading}
           startIcon={<CloseIcon />}
         >
           Close
@@ -104,8 +104,8 @@ const JsonEditorComponent: React.FC = () => {
           variant="contained"
           color="primary"
           startIcon={<SaveIcon />}
-          onClick={handleSave}
-          disabled={isLoading || !jsonContent}
+          onPress={handleSave}
+          isDisabled={isLoading || !jsonContent}
         >
           Save
         </Button>

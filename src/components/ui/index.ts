@@ -17,6 +17,7 @@ import IconButton from './IconButton';
 import InputAdornment from './InputAdornment';
 import { List, ListItem, ListItemButton, ListItemIcon, ListItemText } from './List';
 import MenuItem from './MenuItem';
+import MultiAutocomplete from './MultiAutocomplete';
 import Paper from './Paper';
 import { Select, Item } from './Select';
 import Snackbar from './Snackbar';
@@ -80,6 +81,7 @@ export {
   ListItemIcon,
   ListItemText,
   MenuItem,
+  MultiAutocomplete,
   Paper,
   Select,
   Item,
