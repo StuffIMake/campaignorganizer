@@ -12,8 +12,8 @@ interface LocationMapProps {
   locations: CustomLocation[];
   editMode?: boolean;
   onMapClick?: (e: React.MouseEvent) => void;
-  onDrop?: (e: React.DragEvent) => void;
-  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
   onViewPdf?: (url: string) => void;
   mapContainerRef?: React.RefObject<HTMLDivElement>;
 }
