@@ -266,17 +266,76 @@ export const useCombatSession = () => {
 
   // Update the initiative of a participant
   const updateInitiative = (participantId: string, initiative: number) => {
-    const updatedParticipants = participants.map(p => 
-      p.id === participantId 
-        ? { ...p, initiative }
-        : p
-    ).sort((a, b) => b.initiative - a.initiative);
+    console.log(`useCombatSession.updateInitiative called for ID ${participantId} with value ${initiative}`);
+    
+    // Find the participant first to verify we have the right one
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) {
+      console.error(`Participant with ID ${participantId} not found!`);
+      return;
+    }
+    
+    console.log(`Found participant: ${participant.character.name}, current initiative: ${participant.initiative}`);
+    
+    // Create a deep copy to ensure we're not having reference issues
+    const updatedParticipants = JSON.parse(JSON.stringify(participants));
+    
+    // Update directly with a for loop to ensure we're modifying the right object
+    for (let i = 0; i < updatedParticipants.length; i++) {
+      if (updatedParticipants[i].id === participantId) {
+        console.log(`Updating ${updatedParticipants[i].character.name} initiative from ${updatedParticipants[i].initiative} to ${initiative}`);
+        updatedParticipants[i].initiative = initiative;
+      }
+    }
+    
+    // Sort by initiative (highest first)
+    const sortedParticipants = updatedParticipants.sort((a: CombatParticipant, b: CombatParticipant) => b.initiative - a.initiative);
     
     // Find new index of current turn participant
     const currentParticipantId = participants[currentTurnIndex]?.id;
-    const newCurrentTurnIndex = updatedParticipants.findIndex(p => p.id === currentParticipantId);
+    const newCurrentTurnIndex = sortedParticipants.findIndex((p: CombatParticipant) => p.id === currentParticipantId);
     
-    setParticipants(updatedParticipants);
+    // Log the before and after state for debugging
+    console.log("Before update:", participants.map((p: CombatParticipant) => `${p.character.name}: ${p.initiative}`));
+    console.log("After update:", sortedParticipants.map((p: CombatParticipant) => `${p.character.name}: ${p.initiative}`));
+    
+    // Set state with the new array
+    setParticipants(sortedParticipants);
+    setCurrentTurnIndex(newCurrentTurnIndex >= 0 ? newCurrentTurnIndex : 0);
+  };
+
+  // Update multiple participants' initiatives at once
+  const updateMultipleInitiatives = (initiativeUpdates: Array<{id: string, initiative: number}>) => {
+    console.log("Updating multiple initiatives at once:", initiativeUpdates);
+    
+    // Start with a deep copy of the current participants
+    const updatedParticipants = JSON.parse(JSON.stringify(participants));
+    
+    // Apply all updates
+    initiativeUpdates.forEach(update => {
+      const participantIndex = updatedParticipants.findIndex((p: CombatParticipant) => p.id === update.id);
+      if (participantIndex !== -1) {
+        const participant = updatedParticipants[participantIndex];
+        console.log(`Bulk update: ${participant.character.name} initiative from ${participant.initiative} to ${update.initiative}`);
+        updatedParticipants[participantIndex].initiative = update.initiative;
+      }
+    });
+    
+    // Sort by initiative (highest first)
+    const sortedParticipants = updatedParticipants.sort((a: CombatParticipant, b: CombatParticipant) => 
+      b.initiative - a.initiative
+    );
+    
+    // Find new index of current turn participant
+    const currentParticipantId = participants[currentTurnIndex]?.id;
+    const newCurrentTurnIndex = sortedParticipants.findIndex((p: CombatParticipant) => p.id === currentParticipantId);
+    
+    // Log the before and after state for debugging
+    console.log("Before bulk update:", participants.map((p: CombatParticipant) => `${p.character.name}: ${p.initiative}`));
+    console.log("After bulk update:", sortedParticipants.map((p: CombatParticipant) => `${p.character.name}: ${p.initiative}`));
+    
+    // Set state with the new array
+    setParticipants(sortedParticipants);
     setCurrentTurnIndex(newCurrentTurnIndex >= 0 ? newCurrentTurnIndex : 0);
   };
 
@@ -354,6 +413,7 @@ export const useCombatSession = () => {
     nextTurn,
     addParticipant,
     updateInitiative,
+    updateMultipleInitiatives,
     updateHp,
     updateNotes,
     removeParticipant,

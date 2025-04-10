@@ -36,7 +36,8 @@ export const useAudioPlayer = () => {
     stopTracksByLocationPrefix,
     setVolume,
     setTrackVolume,
-    toggleMuteTrack
+    toggleMuteTrack,
+    volume: masterVolume, // Get master volume from the store
   } = useStore();
 
   /**
@@ -114,7 +115,8 @@ export const useAudioPlayer = () => {
   return {
     // State (read-only view for components)
     tracks: audioTracks, 
-    activeTracks, 
+    activeTracks,
+    masterVolume, // Expose master volume from store
     
     // Actions (stable callbacks)
     play,

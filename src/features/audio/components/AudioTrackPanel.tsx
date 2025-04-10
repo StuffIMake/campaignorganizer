@@ -12,11 +12,12 @@ export const AudioTrackPanel: React.FC = () => {
     toggleMute, 
     stop: stopIndividualTrack, 
     adjustTrackVolume: setTrackVolume,
-    setMasterVolume: setVolume
+    setMasterVolume: setVolume,
+    masterVolume,
   } = useAudioPlayer();
   
-  // Get the master volume from the first active track, or default to 0.7
-  const volume = activeTracks.length > 0 ? activeTracks[0].volume : 0.7; 
+  // Use the master volume from the store instead of the first active track
+  const volume = masterVolume;
   
   const [isMasterMuted, setIsMasterMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(volume || 0.7);
