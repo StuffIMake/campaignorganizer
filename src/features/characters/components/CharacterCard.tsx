@@ -366,7 +366,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                 color="primary"
                 size="small"
                 startIcon={<AddIcon />}
-                onClick={() => onAddItem(character.id)}
+                onPress={() => onAddItem(character.id)}
               >
                 Add
               </Button>

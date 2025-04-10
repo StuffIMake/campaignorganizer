@@ -27,7 +27,7 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
   onChange,
   onSubmit
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit();
   };
@@ -51,7 +51,7 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
                 fullWidth
                 required
                 value={item.name}
-                onChange={(e) => onChange('name', e.target.value)}
+                onChange={(value) => onChange('name', value)}
                 aria-label="Item name"
               />
             </Grid>
@@ -62,7 +62,7 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
                 label="Description"
                 fullWidth
                 value={item.description}
-                onChange={(e) => onChange('description', e.target.value)}
+                onChange={(value) => onChange('description', value)}
                 aria-label="Item description"
                 InputProps={{
                   inputProps: {
@@ -79,7 +79,7 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
                 type="number"
                 fullWidth
                 value={item.quantity}
-                onChange={(e) => onChange('quantity', e.target.value)}
+                onChange={(value) => onChange('quantity', value)}
                 aria-label="Item quantity"
               />
             </Grid>
@@ -90,7 +90,7 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
                 type="number"
                 fullWidth
                 value={item.price === undefined ? '' : item.price}
-                onChange={(e) => onChange('price', e.target.value === '' ? undefined : e.target.value)}
+                onChange={(value) => onChange('price', value === '' ? undefined : value)}
               />
             </Grid>
           </Grid>
@@ -101,7 +101,6 @@ export const ItemFormDialog: React.FC<ItemFormDialogProps> = ({
             type="submit"
             variant="contained" 
             color="primary"
-            onPress={handleSubmit}
           >
             Save
           </Button>

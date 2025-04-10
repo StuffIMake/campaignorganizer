@@ -50,7 +50,7 @@ export const LocationDescriptionDialog: React.FC<LocationDescriptionDialogProps>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <Button onPress={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

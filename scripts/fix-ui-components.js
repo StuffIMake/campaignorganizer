@@ -41,12 +41,9 @@ files.forEach(filePath => {
     let originalContent = content;
     let fileChanged = false;
     
-    // Check if the file uses Button components
+    // Button onClick to onPress, disabled to isDisabled
     if (content.includes('<Button')) {
-      // Replace onClick with onPress and disabled with isDisabled
-      // Updated to handle both self-closing and normal Button components
-      
-      // Handle Button with content and closing tag <Button ...>...</Button>
+      // Handle Button with content
       const regexWithContent = /<Button([^>]*)>([\s\S]*?)<\/Button>/g;
       content = content.replace(regexWithContent, (match, props, children) => {
         let newProps = props
@@ -60,7 +57,7 @@ files.forEach(filePath => {
         return match;
       });
       
-      // Handle self-closing Button <Button ... />
+      // Handle self-closing Button
       const regexSelfClosing = /<Button([^>]*)\s*\/>/g;
       content = content.replace(regexSelfClosing, (match, props) => {
         let newProps = props
@@ -73,77 +70,88 @@ files.forEach(filePath => {
         }
         return match;
       });
-
-      // Handle IconButton with onClick
-      if (content.includes('<IconButton')) {
-        const regexIconButton = /<IconButton([^>]*)>([\s\S]*?)<\/IconButton>/g;
-        content = content.replace(regexIconButton, (match, props, children) => {
-          let newProps = props
-            .replace(/onPress=/g, 'onClick=');
-          
-          if (props !== newProps) {
-            fileChanged = true;
-            return `<IconButton${newProps}>${children}</IconButton>`;
-          }
-          return match;
-        });
-      }
+    }
+    
+    // Handle IconButton components (reverse onPress to onClick)
+    if (content.includes('<IconButton')) {
+      const regexIconButton = /<IconButton([^>]*)>([\s\S]*?)<\/IconButton>/g;
+      content = content.replace(regexIconButton, (match, props, children) => {
+        let newProps = props
+          .replace(/onPress=/g, 'onClick=');
+        
+        if (props !== newProps) {
+          fileChanged = true;
+          return `<IconButton${newProps}>${children}</IconButton>`;
+        }
+        return match;
+      });
     }
     
     // Handle PDFViewer with allowDownload prop
     if (content.includes('<PDFViewer') && content.includes('allowDownload={')) {
-      const oldContent = content;
       content = content.replace(/allowDownload=\{[^}]+\}/g, '');
-      if (content !== oldContent) {
-        fileChanged = true;
-      }
+      fileChanged = true;
     }
     
-    // Handle MUI imports
+    // Replace MUI imports with our components
     if (content.includes('@mui/material') || content.includes('@mui/icons-material')) {
+      // Replace Material UI imports
       const oldContent = content;
       
-      // Replace Material UI Button with our Button
-      if (content.includes('Button') && content.includes('@mui/material')) {
+      // Replace Material UI Button
+      if (content.includes('@mui/material')) {
         content = content.replace(/import\s+{([^}]*)}\s+from\s+['"]@mui\/material['"]/g, (match, imports) => {
           // Extract the imports
           const importItems = imports.split(',').map(item => item.trim());
           
-          // Filter out Button and related components
-          const remainingImports = importItems
-            .filter(item => !item.includes('Button'));
+          // Filter out Material UI components we've replaced
+          const replacedComponents = ['Button', 'TextField', 'IconButton', 'Autocomplete', 'Dialog'];
+          const remainingImports = importItems.filter(item => 
+            !replacedComponents.some(comp => item.includes(comp))
+          );
+          
+          // Add imports for our components if needed
+          const componentsToAdd = replacedComponents.filter(comp => 
+            importItems.some(item => item.includes(comp))
+          );
+          
+          if (componentsToAdd.length > 0) {
+            // Try to find existing UI imports
+            const uiImportRegex = /import\s+{([^}]*)}\s+from\s+['"].*\/components\/ui['"]/;
+            const uiImportMatch = content.match(uiImportRegex);
             
-          if (importItems.length !== remainingImports.length) {
-            // Add import for our Button if needed
-            if (!content.includes("import { Button } from '../../../components/ui'") && 
-                !content.includes("import Button from '../../../components/ui'")) {
-              
-              // Try to find existing UI imports to add Button to
-              const uiImportRegex = /import\s+{([^}]*)}\s+from\s+['"].*\/components\/ui['"]/;
-              const uiImportMatch = content.match(uiImportRegex);
-              
-              if (uiImportMatch) {
-                content = content.replace(uiImportRegex, (match, imports) => {
-                  return match.replace(imports, `${imports}, Button`);
-                });
-              } else {
-                // Add a new import for Button
-                content = content.replace(/import\s+.*from\s+['"].*['"];?(\n)/m, (match, newline) => {
-                  return `${match}import { Button } from '../../../components/ui';${newline}`;
-                });
-              }
+            if (uiImportMatch) {
+              content = content.replace(uiImportRegex, (match, imports) => {
+                return match.replace(imports, `${imports}, ${componentsToAdd.join(', ')}`);
+              });
+            } else {
+              // Add a new import for our components
+              content = content.replace(/import\s+.*from\s+['"].*['"];?(\n)/m, (match, newline) => {
+                return `${match}import { ${componentsToAdd.join(', ')} } from '../../../components/ui';${newline}`;
+              });
             }
-            
-            // If there are no remaining MUI imports, remove the entire import
-            if (remainingImports.length === 0) {
-              return '';
-            }
-            
-            // Otherwise, rebuild the import statement without Button
-            return `import { ${remainingImports.join(', ')} } from '@mui/material'`;
           }
           
-          return match;
+          // If there are no remaining MUI imports, remove the entire import
+          if (remainingImports.length === 0) {
+            return '';
+          }
+          
+          // Otherwise, rebuild the import statement without our components
+          return `import { ${remainingImports.join(', ')} } from '@mui/material'`;
+        });
+      }
+      
+      // Replace Material UI icons
+      if (content.includes('@mui/icons-material')) {
+        content = content.replace(/import\s+{([^}]*)}\s+from\s+['"]@mui\/icons-material['"]/g, (match, imports) => {
+          // Add imports for our icons
+          content = content.replace(/import\s+.*from\s+['"].*['"];?(\n)/m, (match, newline) => {
+            return `${match}import { ${imports.split(',').map(i => i.trim().replace(/\s+as\s+.*/, '')).join(', ')} } from '../../../assets/icons';${newline}`;
+          });
+          
+          // Remove the Material UI icons import
+          return '';
         });
       }
       

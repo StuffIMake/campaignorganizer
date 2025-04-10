@@ -14,14 +14,14 @@ import {
 import { Combobox } from '@headlessui/react';
 import { CancelIcon } from '../../../assets/icons';
 import { AssetManager } from '../../../services/assetManager';
-import { Location } from '../../../types';
+import { Location as LocationType } from '../../../types/location';
 
 interface EditLocationDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (location: Location) => void;
-  location: Location | null;
-  locations: Location[];
+  onSave: (location: LocationType) => void;
+  location: LocationType | null;
+  locations: LocationType[];
 }
 
 const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
@@ -31,7 +31,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
   location,
   locations
 }) => {
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingLocationType, setEditingLocationType] = useState<LocationType | null>(null);
   const [audioAssets, setAudioAssets] = useState<string[]>([]);
   const [imageAssets, setImageAssets] = useState<string[]>([]);
   
@@ -44,7 +44,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
   // Initialize the form when a location is provided
   useEffect(() => {
     if (location) {
-      setEditingLocation({...location});
+      setEditingLocationType({...location});
     }
   }, [location]);
   
@@ -68,28 +68,28 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
   }, [open]);
   
   const handleSave = () => {
-    if (editingLocation) {
-      onSave(editingLocation);
+    if (editingLocationType) {
+      onSave(editingLocationType);
       onClose();
     }
   };
   
-  const handleChange = (field: keyof Location, value: any) => {
-    if (editingLocation) {
-      setEditingLocation({
-        ...editingLocation,
+  const handleChange = (field: keyof LocationType, value: any) => {
+    if (editingLocationType) {
+      setEditingLocationType({
+        ...editingLocationType,
         [field]: value
       });
     }
   };
   
   // Handle adding a connected location
-  const handleAddConnectedLocation = (locationId: string) => {
-    if (editingLocation) {
-      const connectedLocations = editingLocation.connectedLocations || [];
+  const handleAddConnectedLocationType = (locationId: string) => {
+    if (editingLocationType) {
+      const connectedLocations = editingLocationType.connectedLocations || [];
       if (!connectedLocations.includes(locationId)) {
-        setEditingLocation({
-          ...editingLocation,
+        setEditingLocationType({
+          ...editingLocationType,
           connectedLocations: [...connectedLocations, locationId]
         });
       }
@@ -97,18 +97,18 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
   };
   
   // Handle removing a connected location
-  const handleRemoveConnectedLocation = (locationId: string) => {
-    if (editingLocation?.connectedLocations) {
-      setEditingLocation({
-        ...editingLocation,
-        connectedLocations: editingLocation.connectedLocations.filter(id => id !== locationId)
+  const handleRemoveConnectedLocationType = (locationId: string) => {
+    if (editingLocationType?.connectedLocations) {
+      setEditingLocationType({
+        ...editingLocationType,
+        connectedLocations: editingLocationType.connectedLocations.filter(id => id !== locationId)
       });
     }
   };
   
   // Get a list of locations that can be connected (exclude self)
   const getAvailableLocations = () => {
-    return locations.filter(loc => loc.id !== editingLocation?.id);
+    return locations.filter(loc => loc.id !== editingLocationType?.id);
   };
   
   // Filter functions for dropdowns
@@ -144,12 +144,12 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
     );
   }, [locations, connectedLocationsSearchQuery]);
   
-  if (!editingLocation) return null;
+  if (!editingLocationType) return null;
   
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle className="flex justify-between items-center">
-        Edit Location
+        Edit LocationType
         <IconButton
           onClick={onClose}
           aria-label="close"
@@ -163,17 +163,17 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
           <TextField
             label="Name"
             fullWidth
-            value={editingLocation.name}
-            onChange={(e) => handleChange('name', e.target.value)}
-            aria-label="Location name"
+            value={editingLocationType.name}
+            onChange={(value) => handleChange('name', value)}
+            aria-label="LocationType name"
           />
           
           <TextField
             label="Description"
             fullWidth
-            value={editingLocation.description || ''}
-            onChange={(e) => handleChange('description', e.target.value)}
-            aria-label="Location description"
+            value={editingLocationType.description || ''}
+            onChange={(value) => handleChange('description', value)}
+            aria-label="LocationType description"
             InputProps={{
               inputProps: {
                 style: { minHeight: '100px' }
@@ -187,7 +187,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
                 Map Image
               </label>
               <Combobox 
-                value={editingLocation.imageUrl || ''}
+                value={editingLocationType.imageUrl || ''}
                 onChange={(value: string) => handleChange('imageUrl', value)}
               >
                 <div className="relative w-full">
@@ -233,7 +233,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
                 Background Music
               </label>
               <Combobox 
-                value={editingLocation.backgroundMusic || ''}
+                value={editingLocationType.backgroundMusic || ''}
                 onChange={(value: string) => handleChange('backgroundMusic', value)}
               >
                 <div className="relative w-full">
@@ -279,7 +279,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
                 Entry Sound
               </label>
               <Combobox 
-                value={editingLocation.entrySound || ''}
+                value={editingLocationType.entrySound || ''}
                 onChange={(value: string) => handleChange('entrySound', value)}
               >
                 <div className="relative w-full">
@@ -325,13 +325,13 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
                 Connected Locations
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {(editingLocation.connectedLocations || []).map(locationId => {
-                  const connectedLocation = locations.find(loc => loc.id === locationId);
-                  return connectedLocation ? (
+                {(editingLocationType.connectedLocations || []).map(locationId => {
+                  const connectedLocationType = locations.find(loc => loc.id === locationId);
+                  return connectedLocationType ? (
                     <Chip 
                       key={locationId}
-                      label={connectedLocation.name}
-                      onDelete={() => handleRemoveConnectedLocation(locationId)}
+                      label={connectedLocationType.name}
+                      onDelete={() => handleRemoveConnectedLocationType(locationId)}
                     />
                   ) : null;
                 })}
@@ -340,7 +340,7 @@ const EditLocationDialog: React.FC<EditLocationDialogProps> = ({
                 value=""
                 onChange={(locationId: string) => {
                   if (locationId) {
-                    handleAddConnectedLocation(locationId);
+                    handleAddConnectedLocationType(locationId);
                   }
                 }}
               >

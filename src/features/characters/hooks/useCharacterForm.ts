@@ -79,7 +79,7 @@ export const useCharacterForm = (
       locationId: character.locationId || '',
       descriptionType: character.descriptionType || 'markdown',
       descriptionAssetName: character.descriptionAssetName || '',
-      hp: character.hp,
+      hp: character.hp !== undefined ? character.hp : 1,
       inventory: character.inventory || []
     });
     setIsEditDialogOpen(true);

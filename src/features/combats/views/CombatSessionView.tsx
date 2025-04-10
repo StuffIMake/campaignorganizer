@@ -23,7 +23,7 @@ export const CombatSessionView: React.FC = () => {
         <Button 
           variant="contained" 
           color="primary" 
-          onClick={handleClose}
+          onPress={handleClose}
         >
           Back to Combat List
         </Button>
@@ -37,7 +37,7 @@ export const CombatSessionView: React.FC = () => {
         <Typography variant="h4" component="h1" className="text-gray-100">
           Combat: {combat.name}
         </Typography>
-        <Button onClick={handleClose} variant="outlined" color="secondary">
+        <Button onPress={handleClose} variant="outlined" color="secondary">
           Exit Without Saving
         </Button>
       </div>
