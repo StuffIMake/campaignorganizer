@@ -517,7 +517,7 @@ export class AssetManager {
   }
   
   // Export all assets to a zip file
-  static async exportToZip(): Promise<{ success: boolean; message: string; zipBlob?: Blob }> {
+  static async exportToZip(): Promise<{ success: boolean; message: string; zipBlob?: Blob; url?: string }> {
     try {
       // Create a new JSZip instance
       const zip = new JSZip();
@@ -566,10 +566,14 @@ export class AssetManager {
       // Generate the zip file
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       
+      // Create a URL for the blob
+      const url = URL.createObjectURL(zipBlob);
+      
       return { 
         success: true, 
         message: `Successfully exported ${audioAssets.length} audio files, ${imageAssets.length} image files, and ${dataAssets.length} data files.`,
-        zipBlob
+        zipBlob,
+        url
       };
     } catch (error) {
       console.error('Error exporting assets to zip:', error);

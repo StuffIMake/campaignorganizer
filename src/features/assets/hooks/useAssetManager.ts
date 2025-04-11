@@ -189,6 +189,16 @@ export const useAssetManager = () => {
         message: exportResult.message
       });
       
+      // If successful and we have a URL, trigger the download
+      if (exportResult.success && exportResult.url) {
+        const link = document.createElement('a');
+        link.href = exportResult.url;
+        link.download = 'campaign-data.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
       return exportResult;
     } catch (error) {
       const errorResult = {

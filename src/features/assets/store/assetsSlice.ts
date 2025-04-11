@@ -18,7 +18,7 @@ export interface AssetsState {
   isLoading: boolean;
   refreshAssets: () => Promise<void>;
   saveDataToIndexedDB: () => Promise<{ success: boolean; message: string }>;
-  exportToZip: () => Promise<{ success: boolean; message: string; url?: string }>;
+  exportToZip: () => Promise<{ success: boolean; message: string; url?: string; zipBlob?: Blob }>;
 }
 
 export const createAssetsSlice: StateCreator<
