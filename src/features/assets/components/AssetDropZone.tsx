@@ -34,6 +34,10 @@ const AssetDropZoneComponent: React.FC<AssetDropZoneProps> = ({
   onClose
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Add refs for individual file inputs
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
+  const dataFileInputRef = useRef<HTMLInputElement>(null);
   
   const {
     isDragging,
@@ -47,7 +51,8 @@ const AssetDropZoneComponent: React.FC<AssetDropZoneProps> = ({
     clearResult,
     clearAllAssets,
     createSampleData,
-    exportData
+    exportData,
+    addAsset
   } = useAssetManager();
   
   // Additional help text for formatting requirements
@@ -114,6 +119,53 @@ Example locations.json:
   // Memoize the click handler for the file input
   const handleClickFileInput = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+  
+  // Handle individual file selection
+  const handleIndividualFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, type: AssetType) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Process each file in the selection
+    const results = await Promise.all(
+      Array.from(files).map(file => addAsset(type, file))
+    );
+    
+    // Reset file input
+    if (e.target) {
+      e.target.value = '';
+    }
+    
+    // Call the callback if provided
+    if (onAssetImport) {
+      onAssetImport();
+    }
+  }, [addAsset, onAssetImport]);
+  
+  // Handlers for individual file type selection
+  const handleAudioFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleIndividualFileSelect(e, 'audio');
+  }, [handleIndividualFileSelect]);
+  
+  const handleImageFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleIndividualFileSelect(e, 'images');
+  }, [handleIndividualFileSelect]);
+  
+  const handleDataFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleIndividualFileSelect(e, 'data');
+  }, [handleIndividualFileSelect]);
+  
+  // Click handlers for file inputs
+  const handleClickAudioInput = useCallback(() => {
+    audioFileInputRef.current?.click();
+  }, []);
+  
+  const handleClickImageInput = useCallback(() => {
+    imageFileInputRef.current?.click();
+  }, []);
+  
+  const handleClickDataInput = useCallback(() => {
+    dataFileInputRef.current?.click();
   }, []);
   
   // Render content based on whether it's in a dialog or not
@@ -231,6 +283,111 @@ Example locations.json:
                 Clear Assets
               </Button>
             </div>
+          </div>
+        </div>
+        
+        {/* Individual File Upload Section */}
+        <div className="mb-4 bg-gray-700 dark:bg-gray-700 rounded-lg">
+          <div className="flex justify-between items-center p-3">
+            <h3 className="text-base font-medium text-white">Upload Individual Files</h3>
+            <ExpandMoreIcon className="text-gray-400" />
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Audio Files */}
+              <div className="border border-gray-600 rounded-lg p-3">
+                <Typography variant="body1" className="text-white mb-2">
+                  Audio Files
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onPress={handleClickAudioInput}
+                  isDisabled={isProcessing}
+                  className="w-full"
+                >
+                  Select Audio
+                </Button>
+                <Typography variant="body2" className="text-gray-400 mt-2">
+                  Supported: MP3, WAV, OGG
+                </Typography>
+                <input
+                  type="file"
+                  ref={audioFileInputRef}
+                  onChange={handleAudioFileSelect}
+                  className="hidden"
+                  accept="audio/*"
+                  multiple
+                />
+              </div>
+              
+              {/* Image Files */}
+              <div className="border border-gray-600 rounded-lg p-3">
+                <Typography variant="body1" className="text-white mb-2">
+                  Image Files
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onPress={handleClickImageInput}
+                  isDisabled={isProcessing}
+                  className="w-full"
+                >
+                  Select Images
+                </Button>
+                <Typography variant="body2" className="text-gray-400 mt-2">
+                  Supported: JPG, PNG, GIF, SVG
+                </Typography>
+                <input
+                  type="file"
+                  ref={imageFileInputRef}
+                  onChange={handleImageFileSelect}
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                />
+              </div>
+              
+              {/* Data Files */}
+              <div className="border border-gray-600 rounded-lg p-3">
+                <Typography variant="body1" className="text-white mb-2">
+                  Data Files
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<UploadIcon />}
+                  onPress={handleClickDataInput}
+                  isDisabled={isProcessing}
+                  className="w-full"
+                >
+                  Select Data
+                </Button>
+                <Typography variant="body2" className="text-gray-400 mt-2">
+                  Supported: JSON, TXT, PDF
+                </Typography>
+                <input
+                  type="file"
+                  ref={dataFileInputRef}
+                  onChange={handleDataFileSelect}
+                  className="hidden"
+                  accept=".json,.txt,.pdf"
+                  multiple
+                />
+              </div>
+            </div>
+            
+            {/* Processing indicator */}
+            {isProcessing && (
+              <div className="flex justify-center items-center mt-4">
+                <CircularProgress />
+                <Typography variant="body2" className="text-white ml-2">
+                  Processing files...
+                </Typography>
+              </div>
+            )}
           </div>
         </div>
         
