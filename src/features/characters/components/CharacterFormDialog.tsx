@@ -15,6 +15,7 @@ import {
 } from '../../../components/ui';
 import { Character } from '../../../store';
 import type { CustomLocation as Location } from '../../../store';
+import MarkdownContent from '../../../components/MarkdownContent';
 
 interface CharacterFormDialogProps {
   open: boolean;
@@ -45,25 +46,7 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
   locations,
   imageAssets
 }) => {
-  // Create a collection of items for React Aria Select
-  // This approach uses React Aria's item collection pattern
-  const locationItems = useMemo(() => {
-    // Start with the "None" option
-    const items = [
-      <SelectItem key="">None</SelectItem>
-    ];
-    
-    // Add each location
-    for (const location of locations) {
-      items.push(
-        <SelectItem key={location.id}>{location.name}</SelectItem>
-      );
-    }
-    
-    return items;
-  }, [locations]);
-  
-  // Similarly create asset items
+  // Create asset items for select dropdown
   const assetItems = useMemo(() => {
     const items = [
       <SelectItem key="">None</SelectItem>
@@ -89,26 +72,25 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
       maxWidth="md"
       fullWidth
     >
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} className="mt-2">
-            <Grid item xs={12}>
+      <DialogTitle className="border-b border-gray-700 pb-3">{title}</DialogTitle>
+      <DialogContent className="p-0">
+        <div className="flex flex-col md:flex-row h-full">
+          {/* Left panel - core information */}
+          <div className="md:w-1/3 p-6 bg-gray-800 border-r border-gray-700">
+            <div className="mb-6">
+              <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-3">Name</h3>
               <TextField
                 fullWidth
-                label="Name"
                 value={formData.name}
                 onChange={(value) => onChange('name', value)}
                 isRequired
+                className="mb-4"
               />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              
+              <FormControl fullWidth className="mb-4">
                 <InputLabel>Type</InputLabel>
                 <Select
                   selectedKey={formData.type}
-                  label="Type"
                   onSelectionChange={(key) => onChange('type', key)}
                 >
                   <SelectItem key="player">Player</SelectItem>
@@ -116,18 +98,16 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
                   <SelectItem key="monster">Monster</SelectItem>
                 </Select>
               </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
+              <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-3">HP</h3>
               <TextField
                 fullWidth
-                label="HP"
                 value={String(formData.hp)}
                 onChange={(value) => onChange('hp', parseInt(value) || 0)}
               />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
+            </div>
+
+            <div>
+              <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-3">Location</h3>
               <Autocomplete<Location | null>
                 options={locations}
                 getOptionLabel={(option: Location | null) => option?.name || ''}
@@ -139,66 +119,90 @@ export const CharacterFormDialog: React.FC<CharacterFormDialogProps> = ({
                 renderInput={(params: any) => (
                   <TextField 
                     {...params}
-                    label="Location"
                     placeholder="Select a location" 
                     fullWidth
                   />
                 )}
               />
-            </Grid>
+            </div>
+          </div>
+          
+          {/* Right panel - description */}
+          <div className="md:w-2/3 p-6">
+            <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-3">Description</h3>
             
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Description Type</InputLabel>
-                <Select
-                  selectedKey={formData.descriptionType}
-                  label="Description Type"
-                  onSelectionChange={(key) => onChange('descriptionType', key)}
-                >
-                  <SelectItem key="markdown">Markdown</SelectItem>
-                  <SelectItem key="image">Image</SelectItem>
-                  <SelectItem key="pdf">PDF</SelectItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            <FormControl fullWidth className="mb-4">
+              <InputLabel>Content Type</InputLabel>
+              <Select
+                selectedKey={formData.descriptionType}
+                onSelectionChange={(key) => onChange('descriptionType', key)}
+              >
+                <SelectItem key="markdown">Markdown</SelectItem>
+                <SelectItem key="image">Image</SelectItem>
+                <SelectItem key="pdf">PDF</SelectItem>
+              </Select>
+            </FormControl>
             
             {formData.descriptionType === 'markdown' ? (
-              <Grid item xs={12}>
-                <TextField
-                  label="Description"
-                  fullWidth
-                  value={formData.description}
-                  onChange={(value) => onChange('description', value)}
-                />
-              </Grid>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={12}
+                    value={formData.description}
+                    onChange={(value) => onChange('description', value)}
+                    className="h-full"
+                  />
+                </div>
+                
+                <div className="border border-gray-700 rounded-md bg-gray-850 p-4 overflow-auto">
+                  <h3 className="text-sm font-medium mb-4 text-gray-400 border-b border-gray-700 pb-2">Preview</h3>
+                  <div className="prose prose-invert max-w-none">
+                    <MarkdownContent content={formData.description || "Preview will appear here"} />
+                  </div>
+                </div>
+              </div>
             ) : (
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>
-                    {formData.descriptionType === 'image' ? 'Image Asset' : 'PDF Asset'}
-                  </InputLabel>
-                  <Select
-                    selectedKey={formData.descriptionAssetName}
-                    label={formData.descriptionType === 'image' ? 'Image Asset' : 'PDF Asset'}
-                    onSelectionChange={(key) => onChange('descriptionAssetName', key)}
-                  >
-                    {assetItems}
-                  </Select>
-                </FormControl>
-              </Grid>
+              <FormControl fullWidth>
+                <InputLabel>
+                  {formData.descriptionType === 'image' ? 'Image Asset' : 'PDF Asset'}
+                </InputLabel>
+
+                <Autocomplete<string | null>
+                  options={assetItems.map(item => item.key as string)}
+                  getOptionLabel={(option: string | null) => {
+                    const item = assetItems.find(i => i.key === option);
+                    return item ? String(item.key) : '';
+                  }}
+                  value={formData.descriptionAssetName || null}
+                  onChange={(_event: React.ChangeEvent<{}> | null, selectedOption: string | null) => {
+                    onChange('descriptionAssetName', selectedOption || '');
+                  }}
+                  isOptionEqualToValue={(option: string | null, value: string | null) => option === value}
+                  renderInput={(params: any) => (
+                    <TextField 
+                      {...params}
+                      placeholder="Select an asset"
+                      fullWidth
+                    />
+                  )}
+                />
+              </FormControl>
             )}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onPress={onClose}>Cancel</Button>
-          <Button 
-            onPress={handleSubmit} 
-            isDisabled={!formData.name}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </form>
+          </div>
+        </div>
+      </DialogContent>
+      <DialogActions className="border-t border-gray-700 p-4">
+        <Button onPress={onClose} variant="outlined">Cancel</Button>
+        <Button 
+          onPress={handleSubmit} 
+          isDisabled={!formData.name}
+          variant="contained"
+        >
+          Save
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }; 
